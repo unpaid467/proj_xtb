@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polish ETF Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --bg: #0f1117;
@@ -284,6 +285,131 @@
         footer a { color: var(--accent); text-decoration: none; }
         footer a:hover { text-decoration: underline; }
 
+        /* ── Investment Calculator ─────────────────────────────── */
+        .calc-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-top: 0;
+        }
+
+        .calc-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+            margin-bottom: 1.5rem;
+        }
+
+        .calc-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .calc-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .calc-field select,
+        .calc-field input[type="date"],
+        .calc-field input[type="number"] {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 0.55rem 0.85rem;
+            font-size: 0.88rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            color-scheme: dark;
+        }
+
+        .calc-field select:focus,
+        .calc-field input:focus { border-color: var(--accent); }
+
+        .calc-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.55rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 600;
+            font-family: inherit;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+            align-self: flex-end;
+        }
+
+        .calc-btn:hover { opacity: 0.85; }
+        .calc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .calc-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .calc-stat {
+            background: var(--surface2);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            flex: 1;
+            min-width: 110px;
+        }
+
+        .calc-stat-label {
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .calc-stat-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.3;
+        }
+
+        .calc-chart-wrap {
+            position: relative;
+            height: 300px;
+        }
+
+        .calc-note {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 0.75rem;
+            opacity: 0.75;
+        }
+
+        .calc-loading {
+            text-align: center;
+            padding: 2.5rem;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        @media (max-width: 640px) {
+            .calc-form { flex-direction: column; }
+            .calc-field { min-width: unset; }
+            .calc-chart-wrap { height: 220px; }
+        }
+
         @media (max-width: 640px) {
             header { padding: 1rem; }
             main { padding: 1rem; }
@@ -321,60 +447,87 @@
 
     <p class="section-label">Warsaw Stock Exchange (GPW) — ETFs</p>
     <div class="etf-grid" id="etfGrid"></div>
+
+    <!-- ── Investment Calculator ─────────────────────────── -->
+    <p class="section-label" style="margin-top:2.5rem;">Past Investment Calculator</p>
+    <div class="calc-card">
+        <div class="calc-form">
+            <div class="calc-field">
+                <label class="calc-label" for="calcEtf">ETF</label>
+                <select id="calcEtf">
+                    <option value="0">VWRA — Vanguard FTSE All-World (USD)</option>
+                    <option value="1">ETFBNDXPL — Nasdaq-100 PLN-Hedged</option>
+                    <option value="2">ETFBSPXPL — S&amp;P 500 PLN-Hedged</option>
+                </select>
+            </div>
+            <div class="calc-field">
+                <label class="calc-label" for="calcDate">Start Date</label>
+                <input type="date" id="calcDate" />
+            </div>
+            <div class="calc-field">
+                <label class="calc-label" for="calcAmount">Amount (PLN)</label>
+                <input type="number" id="calcAmount" placeholder="e.g. 10 000" min="1" step="1" />
+            </div>
+            <button class="calc-btn" id="calcBtn" onclick="runCalculator()">Calculate ↗</button>
+        </div>
+
+        <div id="calcLoading" class="calc-loading" style="display:none;">⏳ Fetching historical data…</div>
+        <div id="calcError" class="error-msg" style="display:none;"></div>
+
+        <div id="calcResult" style="display:none;">
+            <div class="calc-summary" id="calcSummary"></div>
+            <div class="calc-chart-wrap">
+                <canvas id="calcChart"></canvas>
+            </div>
+            <p class="calc-note" id="calcNote"></p>
+        </div>
+    </div>
 </main>
 
 <footer>
-    Data provided by <a href="https://twelvedata.com" target="_blank" rel="noopener noreferrer">Twelve Data</a>
-    &nbsp;·&nbsp; Updates every hour &nbsp;·&nbsp; Prices may be delayed 15–20 min during market hours
+    Data provided by <a href="https://stooq.com" target="_blank" rel="noopener noreferrer">Stooq</a>
+    &nbsp;·&nbsp; Updates every hour &nbsp;·&nbsp; Prices may be delayed during market hours
 </footer>
 
 <script>
     // ═══════════════════════════════════════════════════════════
-    //  CONFIGURATION
-    // ═══════════════════════════════════════════════════════════
-    const API_KEY = '0067a751532d449a8f3b2e76d450fcc8'; // <-- Place your Twelve Data API key here
+    //  CONFIGURATION — Stooq (100% free, no API key required)
     // ═══════════════════════════════════════════════════════════
 
     const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
-    // Polish ETFs listed on the Warsaw Stock Exchange (GPW)
-    // Symbols verified against Twelve Data's ETF endpoint: https://api.twelvedata.com/etf?exchange=GPW
+    // symbol      — display ticker shown on the card
+    // stooqSymbol — Stooq symbol (lowercase, with exchange suffix)
+    // exchange    — exchange label shown on the card
+    // currency    — ISO currency code used for number formatting
+    // id          — unique key for the DOM card element (no special chars)
     const ETF_LIST = [
         {
-            symbol: 'ETFBW20TR',
-            exchange: 'GPW',
-            name: 'Beta ETF WIG20TR UCITS',
-            description: 'Tracks the WIG20 Total Return index — top 20 blue-chip companies on GPW',
+            id: 'VWRA_UK',
+            symbol: 'VWRA',
+            stooqSymbol: 'vwra.uk',
+            exchange: 'LSE',
+            currency: 'USD',
+            name: 'Vanguard FTSE All-World UCITS ETF (Acc)',
+            description: 'Tracks the FTSE All-World index — 3,000+ large & mid-cap stocks across 50+ countries · USD · Accumulating',
         },
         {
-            symbol: 'ETFBM40TR',
-            exchange: 'GPW',
-            name: 'Beta ETF mWIG40TR UCITS',
-            description: 'Tracks the mWIG40 Total Return index — mid-cap companies on GPW',
-        },
-        {
-            symbol: 'ETFBS80TR',
-            exchange: 'GPW',
-            name: 'Beta ETF sWIG80TR UCITS',
-            description: 'Tracks the sWIG80 Total Return index — small-cap companies on GPW',
-        },
-        {
-            symbol: 'ETFBSPXPL',
-            exchange: 'GPW',
-            name: 'Beta ETF S&P 500 PLN Hedged',
-            description: 'Tracks the S&P 500 index with PLN currency hedge',
-        },
-        {
+            id: 'ETFBNDXPL_PL',
             symbol: 'ETFBNDXPL',
+            stooqSymbol: 'etfbndxpl.pl',
             exchange: 'GPW',
-            name: 'Beta ETF Nasdaq-100 PLN Hedged',
-            description: 'Tracks the Nasdaq-100 index with PLN currency hedge',
+            currency: 'PLN',
+            name: 'Beta ETF Nasdaq-100 PLN-Hedged UCITS (Acc)',
+            description: 'Tracks the Nasdaq-100 index with PLN currency hedge — top 100 non-financial US companies · PLN · Accumulating',
         },
         {
-            symbol: 'ETFBDIVPL',
+            id: 'ETFBSPXPL_PL',
+            symbol: 'ETFBSPXPL',
+            stooqSymbol: 'etfbspxpl.pl',
             exchange: 'GPW',
-            name: 'Beta ETF Dywidenda Plus',
-            description: 'Tracks Polish dividend-paying companies listed on GPW',
+            currency: 'PLN',
+            name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
+            description: 'Tracks the S&P 500 index with PLN currency hedge — 500 largest US companies · PLN · Accumulating',
         },
     ];
 
@@ -387,10 +540,10 @@
     function buildGrid() {
         const grid = document.getElementById('etfGrid');
         grid.innerHTML = ETF_LIST.map(etf => `
-            <div class="etf-card loading" id="card-${etf.symbol}">
+            <div class="etf-card loading" id="card-${etf.id}">
                 <div class="card-header">
                     <span class="etf-symbol">${etf.symbol}</span>
-                    <span class="etf-badge">WSE</span>
+                    <span class="etf-badge">${etf.exchange}</span>
                 </div>
                 <div class="etf-name">${etf.name}</div>
                 <div class="etf-description">${etf.description}</div>
@@ -419,45 +572,45 @@
         }).format(parseFloat(value));
     }
 
-    // ── Update a single card with API data ────────────────────
+    // ── Update a single card with Stooq quote response ──────────
     function updateCard(etf, data) {
-        const card = document.getElementById(`card-${etf.symbol}`);
+        const card = document.getElementById(`card-${etf.id}`);
         if (!card) return;
         card.classList.remove('loading');
 
-        // Handle API-level errors
-        if (!data || data.status === 'error') {
+        if (!data || !data.close) {
             card.classList.add('error');
             card.innerHTML = `
                 <div class="card-header">
                     <span class="etf-symbol">${etf.symbol}</span>
-                    <span class="etf-badge">WSE</span>
+                    <span class="etf-badge">${etf.exchange}</span>
                 </div>
                 <div class="etf-name">${etf.name}</div>
                 <div class="etf-description">${etf.description}</div>
-                <p class="error-msg">⚠ ${data?.message || 'Data unavailable — symbol may not be in your plan'}</p>
+                <p class="error-msg">⚠ Data unavailable</p>
             `;
             return;
         }
 
         card.classList.remove('error');
 
-        const price      = parseFloat(data.close);
-        const change     = parseFloat(data.change);
-        const changePct  = parseFloat(data.percent_change);
-        const currency   = data.currency || 'PLN';
-        const isPos      = change > 0;
-        const isNeg      = change < 0;
+        const price     = parseFloat(data.close);
+        const open      = parseFloat(data.open);
+        const currency  = etf.currency;
+        const change    = price - open;
+        const changePct = open ? ((price - open) / open) * 100 : NaN;
+        const isPos     = change > 0;
+        const isNeg     = change < 0;
         const badgeClass = isPos ? 'positive' : isNeg ? 'negative' : 'neutral';
-        const arrow      = isPos ? '▲' : isNeg ? '▼' : '→';
-        const sign       = isPos ? '+' : '';
+        const arrow     = isPos ? '▲' : isNeg ? '▼' : '→';
+        const sign      = isPos ? '+' : '';
 
         card.innerHTML = `
             <div class="card-header">
                 <span class="etf-symbol">${etf.symbol}</span>
                 <span class="etf-badge">${currency}</span>
             </div>
-            <div class="etf-name">${data.name || etf.name}</div>
+            <div class="etf-name">${etf.name}</div>
             <div class="etf-description">${etf.description}</div>
             <div class="price-row">
                 <span class="etf-price">${fmt(price, currency)}</span>
@@ -466,7 +619,7 @@
             <div style="margin-bottom:0.25rem;">
                 <span class="change-badge ${badgeClass}">
                     ${arrow} ${sign}${fmt(Math.abs(change), currency)}
-                    &nbsp;(${sign}${isNaN(changePct) ? '—' : changePct.toFixed(2)}%)
+                    &nbsp;(${sign}${isNaN(changePct) ? '—' : changePct.toFixed(2)}%) vs open
                 </span>
             </div>
             <hr class="card-divider">
@@ -484,54 +637,51 @@
                     <span class="stat-value">${fmt(data.low, currency)}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Prev Close</span>
-                    <span class="stat-value">${fmt(data.previous_close, currency)}</span>
+                    <span class="stat-label">Volume</span>
+                    <span class="stat-value">${data.volume ? parseInt(data.volume).toLocaleString() : '—'}</span>
                 </div>
             </div>
         `;
     }
 
-    // ── Main fetch ────────────────────────────────────────────
+    // ── Main fetch — Stooq via corsproxy.io (parallel per-symbol) ─
     async function fetchAllPrices() {
-        // Reset countdown
         clearTimeout(refreshTimer);
         nextRefreshTime = Date.now() + REFRESH_INTERVAL_MS;
 
-        // Reset cards to loading state
         document.querySelectorAll('.etf-card').forEach(c => c.classList.add('loading'));
         document.getElementById('refreshBtn').disabled = true;
 
-        // Build comma-separated symbol list with exchange suffix
-        const symbols = ETF_LIST.map(e => `${e.symbol}:${e.exchange}`).join(',');
-        const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols)}&apikey=${API_KEY}`;
+        // Stooq serves one symbol per request; fire them all in parallel via CORS proxy
+        const PROXY = 'https://corsproxy.io/?';
 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
+        const results = await Promise.allSettled(
+            ETF_LIST.map(async etf => {
+                const stooqUrl = `https://stooq.com/q/l/?s=${etf.stooqSymbol}&f=sd2t2ohlcv&h&e=json`;
+                const res = await fetch(`${PROXY}${stooqUrl}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                return json.symbols?.[0] ?? null;
+            })
+        );
 
-            ETF_LIST.forEach(etf => {
-                // Twelve Data keys the response by "SYMBOL:EXCHANGE" for batch requests
-                const key = `${etf.symbol}:${etf.exchange}`;
-                const entry = (ETF_LIST.length === 1)
-                    ? data
-                    : (data[key] ?? data[etf.symbol] ?? null);
-                updateCard(etf, entry);
-            });
+        let anySuccess = false;
+        ETF_LIST.forEach((etf, i) => {
+            if (results[i].status === 'fulfilled' && results[i].value) {
+                updateCard(etf, results[i].value);
+                anySuccess = true;
+            } else {
+                console.warn(`[ETF Tracker] Failed to fetch ${etf.symbol}:`, results[i].reason);
+                updateCard(etf, null);
+            }
+        });
 
-            const now = new Date();
-            document.getElementById('lastUpdated').textContent =
-                `Last updated: ${now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (${now.toLocaleDateString('pl-PL')})`;
-
-        } catch (err) {
-            console.error('[ETF Tracker] Fetch failed:', err);
-            ETF_LIST.forEach(etf => updateCard(etf, { status: 'error', message: err.message }));
-            document.getElementById('lastUpdated').textContent = 'Last update failed — will retry in 1 hour';
-        }
+        const now = new Date();
+        document.getElementById('lastUpdated').textContent = anySuccess
+            ? `Last updated: ${now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (${now.toLocaleDateString('pl-PL')})`
+            : 'Last update failed — will retry in 1 hour';
 
         document.getElementById('refreshBtn').disabled = false;
-
-        // Schedule next auto-refresh
         refreshTimer = setTimeout(fetchAllPrices, REFRESH_INTERVAL_MS);
     }
 
@@ -566,6 +716,209 @@
     buildGrid();
     fetchAllPrices();
     startCountdown();
+
+    // ── Investment Calculator ─────────────────────────────────
+    (function initCalcDefaults() {
+        // Default start date = 1 year ago
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+        const iso = d.toISOString().slice(0, 10);
+        const input = document.getElementById('calcDate');
+        input.value = iso;
+        input.max   = new Date().toISOString().slice(0, 10);
+        // Default amount
+        document.getElementById('calcAmount').value = '10000';
+    })();
+
+    let _calcChart = null;
+
+    function stooqDateStr(d) {
+        return d.toISOString().slice(0, 10).replace(/-/g, '');
+    }
+
+    function fmtPLN(n) {
+        return new Intl.NumberFormat('pl-PL', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(n) + '\u00a0PLN';
+    }
+
+    function parseStooqCSV(csv) {
+        const lines = csv.trim().split('\n');
+        if (lines.length < 2) return [];
+        return lines.slice(1).map(line => {
+            const parts = line.split(',');
+            return { date: (parts[0] || '').trim(), close: parseFloat(parts[4]) };
+        }).filter(r => r.date && !isNaN(r.close));
+    }
+
+    function showCalcError(msg) {
+        document.getElementById('calcLoading').style.display = 'none';
+        document.getElementById('calcResult').style.display  = 'none';
+        const el = document.getElementById('calcError');
+        el.textContent = '\u26a0 ' + msg;
+        el.style.display = 'block';
+    }
+
+    function renderCalcChart(labels, values, initialAmount, etfLabel) {
+        const ctx = document.getElementById('calcChart').getContext('2d');
+        if (_calcChart) { _calcChart.destroy(); _calcChart = null; }
+
+        const last      = values[values.length - 1];
+        const isUp      = last >= initialAmount;
+        const lineColor = isUp ? '#10b981' : '#ef4444';
+        const fillColor = isUp ? 'rgba(16,185,129,0.07)' : 'rgba(239,68,68,0.07)';
+
+        _calcChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: etfLabel + ' (PLN)',
+                        data: values,
+                        borderColor: lineColor,
+                        backgroundColor: fillColor,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        borderWidth: 2,
+                    },
+                    {
+                        label: 'Initial investment',
+                        data: new Array(values.length).fill(initialAmount),
+                        borderColor: 'rgba(136,146,164,0.35)',
+                        borderDash: [6, 4],
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: {
+                        labels: { color: '#8892a4', font: { size: 11 }, boxWidth: 18 }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1a1d27',
+                        borderColor: '#2d3244',
+                        borderWidth: 1,
+                        titleColor: '#e2e8f0',
+                        bodyColor: '#8892a4',
+                        padding: 10,
+                        callbacks: {
+                            label: c => ` ${c.dataset.label}: ${
+                                new Intl.NumberFormat('pl-PL', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                }).format(c.parsed.y)
+                            }\u00a0PLN`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#8892a4', font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 },
+                        grid:  { color: '#2d3244' }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#8892a4',
+                            font: { size: 10 },
+                            callback: v => new Intl.NumberFormat('pl-PL', {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                            }).format(v) + '\u00a0PLN'
+                        },
+                        grid: { color: '#2d3244' }
+                    }
+                }
+            }
+        });
+    }
+
+    async function runCalculator() {
+        const idx    = parseInt(document.getElementById('calcEtf').value, 10);
+        const etf    = ETF_LIST[idx];
+        const dateStr = document.getElementById('calcDate').value;
+        const amount = parseFloat(document.getElementById('calcAmount').value);
+
+        if (!dateStr)               { showCalcError('Please select a start date.'); return; }
+        if (!amount || amount <= 0) { showCalcError('Please enter a valid PLN amount.'); return; }
+        const startDate = new Date(dateStr);
+        if (startDate >= new Date()) { showCalcError('Start date must be in the past.'); return; }
+
+        const d1 = dateStr.replace(/-/g, '');
+        const d2 = stooqDateStr(new Date());
+
+        document.getElementById('calcResult').style.display  = 'none';
+        document.getElementById('calcError').style.display   = 'none';
+        document.getElementById('calcLoading').style.display = 'block';
+        document.getElementById('calcBtn').disabled = true;
+
+        try {
+            const PROXY    = 'https://corsproxy.io/?';
+            const stooqUrl = `https://stooq.com/q/d/l/?s=${etf.stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
+            const res = await fetch(PROXY + stooqUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const csv  = await res.text();
+            const rows = parseStooqCSV(csv);
+
+            if (rows.length === 0) throw new Error('No trading data found for this date range. Try a more recent start date.');
+
+            const startPrice   = rows[0].close;
+            const labels       = rows.map(r => r.date);
+            const values       = rows.map(r => parseFloat((amount * r.close / startPrice).toFixed(2)));
+            const currentValue = values[values.length - 1];
+            const gain         = currentValue - amount;
+            const gainPct      = (gain / amount) * 100;
+            const gainSign     = gain >= 0 ? '+' : '';
+            const gainColor    = gain >= 0 ? 'var(--green)' : 'var(--red)';
+
+            document.getElementById('calcSummary').innerHTML = `
+                <div class="calc-stat">
+                    <div class="calc-stat-label">Invested</div>
+                    <div class="calc-stat-value">${fmtPLN(amount)}</div>
+                </div>
+                <div class="calc-stat">
+                    <div class="calc-stat-label">Value Today</div>
+                    <div class="calc-stat-value" style="color:${gainColor}">${fmtPLN(currentValue)}</div>
+                </div>
+                <div class="calc-stat">
+                    <div class="calc-stat-label">Gain / Loss</div>
+                    <div class="calc-stat-value" style="color:${gainColor}">
+                        ${gainSign}${fmtPLN(gain)}
+                        <span style="font-size:0.78rem; font-weight:600; display:block;">(${gainSign}${gainPct.toFixed(2)}%)</span>
+                    </div>
+                </div>
+                <div class="calc-stat">
+                    <div class="calc-stat-label">Trading Days</div>
+                    <div class="calc-stat-value" style="font-size:1rem;">${rows.length}</div>
+                </div>
+            `;
+
+            const noteText = etf.currency !== 'PLN'
+                ? `\u26a0\ufe0f ${etf.symbol} is priced in ${etf.currency}. This calculator tracks the ETF\u2019s price return only and does not adjust for PLN/${etf.currency} exchange rate fluctuations.`
+                : `Data source: Stooq. Past performance does not guarantee future results.`;
+            document.getElementById('calcNote').textContent = noteText;
+
+            renderCalcChart(labels, values, amount, etf.symbol);
+
+            document.getElementById('calcLoading').style.display = 'none';
+            document.getElementById('calcResult').style.display  = 'block';
+
+        } catch (err) {
+            showCalcError(err.message);
+        } finally {
+            document.getElementById('calcBtn').disabled = false;
+            document.getElementById('calcLoading').style.display = 'none';
+        }
+    }
 </script>
 
 </body>

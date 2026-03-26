@@ -338,42 +338,43 @@
     const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
     // Polish ETFs listed on the Warsaw Stock Exchange (GPW)
+    // Symbols verified against Twelve Data's ETF endpoint: https://api.twelvedata.com/etf?exchange=GPW
     const ETF_LIST = [
         {
-            symbol: 'ETFW20L',
-            exchange: 'WSE',
+            symbol: 'ETFBW20TR',
+            exchange: 'GPW',
             name: 'Beta ETF WIG20TR UCITS',
             description: 'Tracks the WIG20 Total Return index — top 20 blue-chip companies on GPW',
         },
         {
-            symbol: 'ETF40',
-            exchange: 'WSE',
+            symbol: 'ETFBM40TR',
+            exchange: 'GPW',
             name: 'Beta ETF mWIG40TR UCITS',
             description: 'Tracks the mWIG40 Total Return index — mid-cap companies on GPW',
         },
         {
-            symbol: 'ETFSP500',
-            exchange: 'WSE',
+            symbol: 'ETFBS80TR',
+            exchange: 'GPW',
+            name: 'Beta ETF sWIG80TR UCITS',
+            description: 'Tracks the sWIG80 Total Return index — small-cap companies on GPW',
+        },
+        {
+            symbol: 'ETFBSPXPL',
+            exchange: 'GPW',
             name: 'Beta ETF S&P 500 PLN Hedged',
             description: 'Tracks the S&P 500 index with PLN currency hedge',
         },
         {
-            symbol: 'ETFBIG',
-            exchange: 'WSE',
-            name: 'Beta ETF BIG DATA Technology',
-            description: 'Tracks leading global big data and technology companies',
+            symbol: 'ETFBNDXPL',
+            exchange: 'GPW',
+            name: 'Beta ETF Nasdaq-100 PLN Hedged',
+            description: 'Tracks the Nasdaq-100 index with PLN currency hedge',
         },
         {
-            symbol: 'ETFDJI',
-            exchange: 'WSE',
-            name: 'Beta ETF Dow Jones Industrial',
-            description: 'Tracks the Dow Jones Industrial Average index',
-        },
-        {
-            symbol: 'ETFUSAG',
-            exchange: 'WSE',
-            name: 'Beta ETF MSCI USA ESG',
-            description: 'Tracks US companies meeting ESG (Environmental, Social, Governance) criteria',
+            symbol: 'ETFBDIVPL',
+            exchange: 'GPW',
+            name: 'Beta ETF Dywidenda Plus',
+            description: 'Tracks Polish dividend-paying companies listed on GPW',
         },
     ];
 

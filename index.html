@@ -1,9 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polish ETF Tracker</title>
+    <title>Tracker Portfeli ETF</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         :root {
@@ -404,16 +404,108 @@
             font-size: 0.88rem;
         }
 
-        @media (max-width: 640px) {
-            .calc-form { flex-direction: column; }
-            .calc-field { min-width: unset; }
-            .calc-chart-wrap { height: 220px; }
+        /* ── Person portfolio cards ────────────────────────────── */
+        .portfolios {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .person-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .person-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+        }
+
+        .person-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        .person-name {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            flex: 1;
+        }
+
+        .collapse-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: 6px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        .collapse-btn:hover { background: var(--surface); color: var(--text); }
+
+        .person-body {
+            padding: 1.25rem;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+        }
+        .person-body.collapsed {
+            max-height: 0 !important;
+            padding-top: 0;
+            padding-bottom: 0;
+            opacity: 0;
+        }
+
+        .etf-info-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.7rem;
+            color: var(--accent);
+            text-decoration: none;
+            margin-top: 0.4rem;
+            opacity: 0.8;
+            transition: opacity 0.15s;
+        }
+        .etf-info-link:hover { opacity: 1; text-decoration: underline; }
+
+        .sparkline-wrap {
+            margin-top: 0.85rem;
+            height: 60px;
+            position: relative;
+        }
+        .sparkline-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+            text-align: center;
+        }
+
+        .person-body .etf-grid {
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
         }
 
         @media (max-width: 640px) {
             header { padding: 1rem; }
             main { padding: 1rem; }
             h1 { font-size: 1.2rem; }
+            .calc-form { flex-direction: column; }
+            .calc-field { min-width: unset; }
+            .calc-chart-wrap { height: 220px; }
         }
     </style>
 </head>
@@ -423,55 +515,50 @@
     <div class="logo">
         <div class="logo-icon">📈</div>
         <div>
-            <h1>Polish <span>ETF</span> Tracker</h1>
-            <div class="last-updated" id="lastUpdated">Fetching data…</div>
+            <h1>Portfele <span>ETF</span></h1>
+            <div class="last-updated" id="lastUpdated">Pobieranie danych…</div>
         </div>
     </div>
     <div class="header-right">
         <div class="status-indicator">
             <div class="status-dot"></div>
-            <span id="countdownText">Next update in: --:--</span>
+            <span id="countdownText">Następna aktualizacja za: --:--</span>
         </div>
     </div>
 </header>
 
 <main>
     <div class="refresh-bar-container">
-        <span class="refresh-bar-label">Next refresh</span>
+        <span class="refresh-bar-label">Następne odświeżenie</span>
         <div class="refresh-bar-wrap">
             <div class="refresh-bar" id="refreshBar"></div>
         </div>
         <span class="countdown-text" id="countdownBar">60:00</span>
-        <button class="refresh-btn" id="refreshBtn" onclick="onManualRefresh()">↻ Refresh now</button>
+        <button class="refresh-btn" id="refreshBtn" onclick="onManualRefresh()">↻ Odśwież teraz</button>
     </div>
 
-    <p class="section-label">Warsaw Stock Exchange (GPW) — ETFs</p>
-    <div class="etf-grid" id="etfGrid"></div>
+    <div class="portfolios" id="portfolios"></div>
 
     <!-- ── Investment Calculator ─────────────────────────── -->
-    <p class="section-label" style="margin-top:2.5rem;">Past Investment Calculator</p>
+    <p class="section-label" style="margin-top:2.5rem;">Kalkulator historyczny</p>
     <div class="calc-card">
         <div class="calc-form">
             <div class="calc-field">
                 <label class="calc-label" for="calcEtf">ETF</label>
-                <select id="calcEtf">
-                    <option value="0">VWRA — Vanguard FTSE All-World (USD)</option>
-                    <option value="1">ETFBNDXPL — Nasdaq-100 PLN-Hedged</option>
-                    <option value="2">ETFBSPXPL — S&amp;P 500 PLN-Hedged</option>
-                </select>
+                <select id="calcEtf"><!-- populated by buildCalcDropdown() --></select>
             </div>
             <div class="calc-field">
-                <label class="calc-label" for="calcDate">Start Date</label>
+                <label class="calc-label" for="calcDate">Data początkowa</label>
                 <input type="date" id="calcDate" />
             </div>
             <div class="calc-field">
-                <label class="calc-label" for="calcAmount">Amount (PLN)</label>
-                <input type="number" id="calcAmount" placeholder="e.g. 10 000" min="1" step="1" />
+                <label class="calc-label" for="calcAmount">Kwota (PLN)</label>
+                <input type="number" id="calcAmount" placeholder="np. 10 000" min="1" step="1" />
             </div>
-            <button class="calc-btn" id="calcBtn" onclick="runCalculator()">Calculate ↗</button>
+            <button class="calc-btn" id="calcBtn" onclick="runCalculator()">Oblicz ↗</button>
         </div>
 
-        <div id="calcLoading" class="calc-loading" style="display:none;">⏳ Fetching historical data…</div>
+        <div id="calcLoading" class="calc-loading" style="display:none;">⏳ Pobieranie danych historycznych…</div>
         <div id="calcError" class="error-msg" style="display:none;"></div>
 
         <div id="calcResult" style="display:none;">
@@ -485,84 +572,265 @@
 </main>
 
 <footer>
-    Data provided by <a href="https://stooq.com" target="_blank" rel="noopener noreferrer">Stooq</a>
-    &nbsp;·&nbsp; Updates every hour &nbsp;·&nbsp; Prices may be delayed during market hours
+    Dane dostarczone przez <a href="https://stooq.com" target="_blank" rel="noopener noreferrer">Stooq</a>
+    &nbsp;·&nbsp; Aktualizacja co godzinę &nbsp;·&nbsp; Ceny mogą być opóŻnione w godzinach handlu
 </footer>
 
 <script>
     // ═══════════════════════════════════════════════════════════
-    //  CONFIGURATION — Stooq (100% free, no API key required)
+    //  CONFIGURATION — edit only this section to add/remove ETFs
+    //  or portfolios. Cards, the calculator dropdown, and fetch
+    //  logic all update automatically — no other changes needed.
+    //
+    //  Data source : Stooq  https://stooq.com  (free, no key)
+    //  CORS proxy  : corsproxy.io              (no setup needed)
     // ═══════════════════════════════════════════════════════════
 
-    const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+    const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // price auto-refresh interval (ms)
 
-    // symbol      — display ticker shown on the card
-    // stooqSymbol — Stooq symbol (lowercase, with exchange suffix)
-    // exchange    — exchange label shown on the card
-    // currency    — ISO currency code used for number formatting
-    // id          — unique key for the DOM card element (no special chars)
-    const ETF_LIST = [
+    // ETF entry fields:
+    //   id          — unique DOM key; recommended format: INITIALS_SYMBOL_EXCHANGE
+    //   symbol      — display ticker shown on the card badge
+    //   stooqSymbol — lowercase symbol with exchange suffix used for API calls
+    //                 verify at: https://stooq.com/q/?s=<symbol>
+    //   exchange    — short exchange label shown on the card, e.g. "LSE", "GPW"
+    //   currency    — ISO 4217 code used for formatting, e.g. "USD", "PLN", "EUR"
+    //   name        — full ETF name displayed on the card
+    //   description — short description (keep under ~120 chars for layout)
+    const PORTFOLIOS = [
         {
-            id: 'VWRA_UK',
-            symbol: 'VWRA',
-            stooqSymbol: 'vwra.uk',
-            exchange: 'LSE',
-            currency: 'USD',
-            name: 'Vanguard FTSE All-World UCITS ETF (Acc)',
-            description: 'Tracks the FTSE All-World index — 3,000+ large & mid-cap stocks across 50+ countries · USD · Accumulating',
+            name: 'Leo',
+            avatar: '👦',
+            color: '#f59e0b',
+            etfs: [
+                {
+                    id: 'L_ETFBTCPL_PL',
+                    symbol: 'ETFBTCPL',
+                    stooqSymbol: 'etfbtcpl.pl',
+                    exchange: 'GPW',
+                    currency: 'PLN',
+                    name: 'Beta ETF Bitcoin PFIZ UCITS (Acc)',
+                    description: 'Śledzi cenę Bitcoina — bezpośrednia ekspozycja na BTC · PLN · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/Bitcoin',
+                },
+                {
+                    id: 'L_GRID_DE',
+                    symbol: 'GRID',
+                    stooqSymbol: 'grid.de',
+                    exchange: 'XETRA',
+                    currency: 'EUR',
+                    name: 'First Trust Clean Edge Smart Grid UCITS ETF (Acc)',
+                    description: 'Śledzi Clean Edge Smart Grid Infrastructure Index — spółki z branży inteligentnych sieci energetycznych · EUR · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/Inteligentna_sieć_elektroenergetyczna',
+                },
+                {
+                    id: 'L_ETFNATO_PL',
+                    symbol: 'ETFNATO',
+                    stooqSymbol: 'etfnato.pl',
+                    exchange: 'GPW',
+                    currency: 'PLN',
+                    name: 'HANetf Future of Defense UCITS ETF (Acc)',
+                    description: 'Spółki korzystające na wzroście wydatków obronnych państw NATO · PLN · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/NATO',
+                },
+                {
+                    id: 'L_CNDX_UK',
+                    symbol: 'CNDX',
+                    stooqSymbol: 'cndx.uk',
+                    exchange: 'LSE',
+                    currency: 'USD',
+                    name: 'iShares NASDAQ 100 UCITS ETF (Acc)',
+                    description: 'Śledzi NASDAQ-100 — 100 największych spółek niefinansowych na NASDAQ · USD · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/NASDAQ-100',
+                },
+                {
+                    id: 'L_ETFBSPXPL_PL',
+                    symbol: 'ETFBSPXPL',
+                    stooqSymbol: 'etfbspxpl.pl',
+                    exchange: 'GPW',
+                    currency: 'PLN',
+                    name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
+                    description: 'Śledzi S&P 500 z zabezpieczeniem walutowym PLN — 500 największych spółek USA · PLN · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/S%26P_500',
+                },
+            ],
         },
         {
-            id: 'ETFBNDXPL_PL',
-            symbol: 'ETFBNDXPL',
-            stooqSymbol: 'etfbndxpl.pl',
-            exchange: 'GPW',
-            currency: 'PLN',
-            name: 'Beta ETF Nasdaq-100 PLN-Hedged UCITS (Acc)',
-            description: 'Tracks the Nasdaq-100 index with PLN currency hedge — top 100 non-financial US companies · PLN · Accumulating',
+            name: 'Mamus',
+            avatar: '👵',
+            color: '#8b5cf6',
+            etfs: [
+                {
+                    id: 'MA_EIMI_UK',
+                    symbol: 'EIMI',
+                    stooqSymbol: 'eimi.uk',
+                    exchange: 'LSE',
+                    currency: 'USD',
+                    name: 'iShares Core MSCI EM IMI UCITS ETF (Acc)',
+                    description: 'Śledzi MSCI EM IMI Index — ponad 2700 akcji z 24 krajów rozwijających się · USD · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/MSCI_Emerging_Markets',
+                },
+                {
+                    id: 'MA_CSPX_UK',
+                    symbol: 'CSPX',
+                    stooqSymbol: 'cspx.uk',
+                    exchange: 'LSE',
+                    currency: 'USD',
+                    name: 'iShares Core S&P 500 UCITS ETF (Acc)',
+                    description: 'Śledzi S&P 500 — 500 największych spółek USA według kapitalizacji rynkowej · USD · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/S%26P_500',
+                },
+            ],
         },
         {
-            id: 'ETFBSPXPL_PL',
-            symbol: 'ETFBSPXPL',
-            stooqSymbol: 'etfbspxpl.pl',
-            exchange: 'GPW',
-            currency: 'PLN',
-            name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
-            description: 'Tracks the S&P 500 index with PLN currency hedge — 500 largest US companies · PLN · Accumulating',
+            name: 'Marcelinka',
+            avatar: '👩',
+            color: '#ec4899',
+            etfs: [
+                {
+                    id: 'M_SMH_UK',
+                    symbol: 'SMH',
+                    stooqSymbol: 'smh.uk',
+                    exchange: 'LSE',
+                    currency: 'USD',
+                    name: 'VanEck Semiconductor UCITS ETF (Acc)',
+                    description: 'Śledzi MVIS US Listed Semiconductor 10% Capped Index — globalni liderzy rynku półprzewodników · USD · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/P%C3%B3%C5%82przewodnik',
+                },
+                {
+                    id: 'M_ETFBSPXPL_PL',
+                    symbol: 'ETFBSPXPL',
+                    stooqSymbol: 'etfbspxpl.pl',
+                    exchange: 'GPW',
+                    currency: 'PLN',
+                    name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
+                    description: 'Śledzi S&P 500 z zabezpieczeniem walutowym PLN — 500 największych spółek USA · PLN · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/S%26P_500',
+                },
+                {
+                    id: 'M_INRA_NL',
+                    symbol: 'INRA',
+                    stooqSymbol: 'inra.nl',
+                    exchange: 'AEX',
+                    currency: 'USD',
+                    name: 'iShares Global Clean Energy UCITS ETF (Acc)',
+                    description: 'Śledzi S&P Global Clean Energy Index — spółki z sektora energii odnawialnej i czystej · USD · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/Odnawialne_%C5%BAr%C3%B3d%C5%82a_energii',
+                },
+            ],
         },
+        {
+            name: 'Kacper',
+            avatar: '👨',
+            color: '#3b82f6',
+            etfs: [
+                {
+                    id: 'K_VWRA_UK',
+                    symbol: 'VWRA',
+                    stooqSymbol: 'vwra.uk',
+                    exchange: 'LSE',
+                    currency: 'USD',
+                    name: 'Vanguard FTSE All-World UCITS ETF (Acc)',
+                    description: 'Śledzi FTSE All-World index — ponad 3000 akcji dużych i średnich spółek z ponad 50 krajów · USD · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/FTSE_All-World_Index',
+                },
+                {
+                    id: 'K_ETFBNDXPL_PL',
+                    symbol: 'ETFBNDXPL',
+                    stooqSymbol: 'etfbndxpl.pl',
+                    exchange: 'GPW',
+                    currency: 'PLN',
+                    name: 'Beta ETF Nasdaq-100 PLN-Hedged UCITS (Acc)',
+                    description: 'Śledzi Nasdaq-100 z zabezpieczeniem walutowym PLN — 100 największych spółek niefinansowych USA · PLN · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/NASDAQ-100',
+                },
+                {
+                    id: 'K_ETFBSPXPL_PL',
+                    symbol: 'ETFBSPXPL',
+                    stooqSymbol: 'etfbspxpl.pl',
+                    exchange: 'GPW',
+                    currency: 'PLN',
+                    name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
+                    description: 'Śledzi S&P 500 z zabezpieczeniem walutowym PLN — 500 największych spółek USA · PLN · Akumulacyjny',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/S%26P_500',
+                },
+            ],
+        },
+        // ── Aby dodać nowe portfolio, dołącz obiekt poniżej. ──
     ];
+
+    // Derived flat list — do not edit; auto-built from PORTFOLIOS above.
+    // Used by fetchAllPrices() and buildCalcDropdown().
+    const ALL_ETFS = PORTFOLIOS.flatMap(p => p.etfs);
 
     // ── State ──────────────────────────────────────────────────
     let refreshTimer      = null;
     let countdownInterval = null;
     let nextRefreshTime   = null;
+    const sparklineCache  = {};   // etf.id → [{date, close}]
+    const sparkCharts     = {};   // etf.id → Chart instance
+
+    // ── Collapse / expand a portfolio section ─────────────────
+    function togglePortfolio(bodyId, header) {
+        const body = document.getElementById(bodyId);
+        const btn  = header.querySelector('.collapse-btn');
+        const isCollapsed = body.classList.toggle('collapsed');
+        btn.textContent = isCollapsed ? '▼ Rozwiń' : '▲ Zwiń';
+    }
 
     // ── Build skeleton cards on page load ─────────────────────
     function buildGrid() {
-        const grid = document.getElementById('etfGrid');
-        grid.innerHTML = ETF_LIST.map(etf => `
-            <div class="etf-card loading" id="card-${etf.id}">
-                <div class="card-header">
-                    <span class="etf-symbol">${etf.symbol}</span>
-                    <span class="etf-badge">${etf.exchange}</span>
+        const container = document.getElementById('portfolios');
+        container.innerHTML = PORTFOLIOS.map(portfolio => `
+            <div class="person-card">
+                <div class="person-header" style="cursor:pointer;" onclick="togglePortfolio('body-${portfolio.name}', this)">
+                    <span class="person-name" style="color:${portfolio.color}">${portfolio.name}</span>
+                    <button class="collapse-btn" tabindex="-1">▲ Zwiń</button>
                 </div>
-                <div class="etf-name">${etf.name}</div>
-                <div class="etf-description">${etf.description}</div>
-                <div class="price-row">
-                    <span class="etf-price placeholder-val">—</span>
-                </div>
-                <hr class="card-divider">
-                <div class="card-stats">
-                    ${['Open','High','Low','Prev Close'].map(l => `
-                    <div class="stat-item">
-                        <span class="stat-label">${l}</span>
-                        <span class="stat-value placeholder-val">—</span>
-                    </div>`).join('')}
+                <div class="person-body" id="body-${portfolio.name}">
+                    <div class="etf-grid">
+                        ${portfolio.etfs.map(etf => `
+                        <div class="etf-card loading" id="card-${etf.id}">
+                            <div class="card-header">
+                                <span class="etf-symbol">${etf.symbol}</span>
+                                <span class="etf-badge">${etf.exchange}</span>
+                            </div>
+                            <div class="etf-name">${etf.name}</div>
+                            <div class="etf-description">${etf.description}</div>
+                            ${etf.infoUrl ? `<a class="etf-info-link" href="${etf.infoUrl}" target="_blank" rel="noopener noreferrer">🔗 Więcej informacji</a>` : ''}
+                            <div class="price-row">
+                                <span class="etf-price placeholder-val">—</span>
+                            </div>
+                            <hr class="card-divider">
+                            <div class="card-stats">
+                                ${['Otwarcie', 'Maks.', 'Min.', 'Wolumen'].map(l => `
+                                <div class="stat-item">
+                                    <span class="stat-label">${l}</span>
+                                    <span class="stat-value placeholder-val">—</span>
+                                </div>`).join('')}
+                            </div>
+                            <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
+                            <div class="sparkline-label">Od 01.01.2026</div>
+                        </div>`).join('')}
+                    </div>
                 </div>
             </div>
         `).join('');
     }
 
     // ── Number formatter ──────────────────────────────────────
+
+    // -- Auto-build calculator ETF dropdown from PORTFOLIOS -----
+    // Adding an ETF to PORTFOLIOS automatically adds it here.
+    function buildCalcDropdown() {
+        document.getElementById('calcEtf').innerHTML = PORTFOLIOS.map(p =>
+            `<optgroup label="${p.name}">${
+                p.etfs.map(e =>
+                    `<option value="${e.id}">${e.symbol} \u2014 ${e.name} (${e.currency})</option>`
+                ).join('')
+            }</optgroup>`
+        ).join('');
+    }
     function fmt(value, currency) {
         if (value === null || value === undefined || isNaN(value)) return '—';
         const locale = (currency === 'PLN') ? 'pl-PL' : 'en-US';
@@ -587,8 +855,12 @@
                 </div>
                 <div class="etf-name">${etf.name}</div>
                 <div class="etf-description">${etf.description}</div>
-                <p class="error-msg">⚠ Data unavailable</p>
+                ${etf.infoUrl ? `<a class="etf-info-link" href="${etf.infoUrl}" target="_blank" rel="noopener noreferrer">🔗 Więcej informacji</a>` : ''}
+                <p class="error-msg">⚠ Dane niedostępne</p>
+                <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
+                <div class="sparkline-label">Od 01.01.2026</div>
             `;
+            requestAnimationFrame(() => drawSparkline(etf.id, sparklineCache[etf.id]));
             return;
         }
 
@@ -612,6 +884,7 @@
             </div>
             <div class="etf-name">${etf.name}</div>
             <div class="etf-description">${etf.description}</div>
+            ${etf.infoUrl ? `<a class="etf-info-link" href="${etf.infoUrl}" target="_blank" rel="noopener noreferrer">🔗 Więcej informacji</a>` : ''}
             <div class="price-row">
                 <span class="etf-price">${fmt(price, currency)}</span>
                 <span class="etf-currency">${currency}</span>
@@ -619,29 +892,80 @@
             <div style="margin-bottom:0.25rem;">
                 <span class="change-badge ${badgeClass}">
                     ${arrow} ${sign}${fmt(Math.abs(change), currency)}
-                    &nbsp;(${sign}${isNaN(changePct) ? '—' : changePct.toFixed(2)}%) vs open
+                    &nbsp;(${sign}${isNaN(changePct) ? '—' : changePct.toFixed(2)}%) vs otwarcie
                 </span>
             </div>
             <hr class="card-divider">
             <div class="card-stats">
                 <div class="stat-item">
-                    <span class="stat-label">Open</span>
+                    <span class="stat-label">Otwarcie</span>
                     <span class="stat-value">${fmt(data.open, currency)}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">High</span>
+                    <span class="stat-label">Maks.</span>
                     <span class="stat-value">${fmt(data.high, currency)}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Low</span>
+                    <span class="stat-label">Min.</span>
                     <span class="stat-value">${fmt(data.low, currency)}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Volume</span>
+                    <span class="stat-label">Wolumen</span>
                     <span class="stat-value">${data.volume ? parseInt(data.volume).toLocaleString() : '—'}</span>
                 </div>
             </div>
+            <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
+            <div class="sparkline-label">Od 01.01.2026</div>
         `;
+        requestAnimationFrame(() => drawSparkline(etf.id, sparklineCache[etf.id]));
+    }
+
+    // ── Per-ETF sparkline chart (01.01.2026 → today) ─────────
+    function drawSparkline(etfId, rows) {
+        if (!rows || rows.length < 2) return;
+        const canvas = document.getElementById(`spark-${etfId}`);
+        if (!canvas) return;
+        if (sparkCharts[etfId]) { sparkCharts[etfId].destroy(); delete sparkCharts[etfId]; }
+        const closes = rows.map(r => r.close);
+        const isUp   = closes[closes.length - 1] >= closes[0];
+        const color  = isUp ? '#10b981' : '#ef4444';
+        const ctx    = canvas.getContext('2d');
+        const h      = canvas.parentElement.clientHeight || 60;
+        const grad   = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, color + '44');
+        grad.addColorStop(1, color + '00');
+        sparkCharts[etfId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: rows.map(r => r.date),
+                datasets: [{ data: closes, borderColor: color, borderWidth: 1.5,
+                    fill: true, backgroundColor: grad, pointRadius: 0, tension: 0.3 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } },
+            }
+        });
+    }
+
+    async function fetchAllSparklines() {
+        const PROXY = 'https://corsproxy.io/?';
+        const d2 = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        await Promise.allSettled(ALL_ETFS.map(async etf => {
+            try {
+                const url = `https://stooq.com/q/d/l/?s=${etf.stooqSymbol}&d1=20260101&d2=${d2}&i=d`;
+                const res = await fetch(PROXY + url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const rows = parseStooqCSV(await res.text());
+                if (rows.length > 0) {
+                    sparklineCache[etf.id] = rows;
+                    requestAnimationFrame(() => drawSparkline(etf.id, rows));
+                }
+            } catch (e) {
+                console.warn(`[Sparkline] Failed for ${etf.symbol}:`, e);
+            }
+        }));
     }
 
     // ── Main fetch — Stooq via corsproxy.io (parallel per-symbol) ─
@@ -652,11 +976,10 @@
         document.querySelectorAll('.etf-card').forEach(c => c.classList.add('loading'));
         document.getElementById('refreshBtn').disabled = true;
 
-        // Stooq serves one symbol per request; fire them all in parallel via CORS proxy
         const PROXY = 'https://corsproxy.io/?';
 
         const results = await Promise.allSettled(
-            ETF_LIST.map(async etf => {
+            ALL_ETFS.map(async etf => {
                 const stooqUrl = `https://stooq.com/q/l/?s=${etf.stooqSymbol}&f=sd2t2ohlcv&h&e=json`;
                 const res = await fetch(`${PROXY}${stooqUrl}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -666,7 +989,7 @@
         );
 
         let anySuccess = false;
-        ETF_LIST.forEach((etf, i) => {
+        ALL_ETFS.forEach((etf, i) => {
             if (results[i].status === 'fulfilled' && results[i].value) {
                 updateCard(etf, results[i].value);
                 anySuccess = true;
@@ -678,8 +1001,8 @@
 
         const now = new Date();
         document.getElementById('lastUpdated').textContent = anySuccess
-            ? `Last updated: ${now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (${now.toLocaleDateString('pl-PL')})`
-            : 'Last update failed — will retry in 1 hour';
+            ? `Ostatnia aktualizacja: ${now.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (${now.toLocaleDateString('pl-PL')})`
+            : 'Aktualizacja nie powiodła się — ponowię za 1 godzinę';
 
         document.getElementById('refreshBtn').disabled = false;
         refreshTimer = setTimeout(fetchAllPrices, REFRESH_INTERVAL_MS);
@@ -690,6 +1013,7 @@
         clearTimeout(refreshTimer);
         clearInterval(countdownInterval);
         fetchAllPrices();
+        fetchAllSparklines();
         startCountdown();
     }
 
@@ -706,15 +1030,17 @@
             const pct       = (remaining / REFRESH_INTERVAL_MS) * 100;
             const label     = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-            document.getElementById('countdownText').textContent = `Next update in: ${label}`;
+            document.getElementById('countdownText').textContent = `Następna aktualizacja za: ${label}`;
             document.getElementById('countdownBar').textContent  = label;
             document.getElementById('refreshBar').style.width    = `${pct}%`;
         }, 1000);
     }
 
     // ── Initialise ────────────────────────────────────────────
-    buildGrid();
-    fetchAllPrices();
+    buildGrid();           // render skeleton cards from PORTFOLIOS
+    buildCalcDropdown();   // populate calculator ETF selector from PORTFOLIOS
+    fetchAllPrices();      // kick off first live-price fetch
+    fetchAllSparklines();  // load per-ETF YTD sparklines
     startCountdown();
 
     // ── Investment Calculator ─────────────────────────────────
@@ -775,7 +1101,7 @@
                 labels,
                 datasets: [
                     {
-                        label: etfLabel + ' (PLN)',
+                        label: etfLabel + ' — wartość (PLN)',
                         data: values,
                         borderColor: lineColor,
                         backgroundColor: fillColor,
@@ -786,7 +1112,7 @@
                         borderWidth: 2,
                     },
                     {
-                        label: 'Initial investment',
+                        label: 'Zainwestowana kwota',
                         data: new Array(values.length).fill(initialAmount),
                         borderColor: 'rgba(136,146,164,0.35)',
                         borderDash: [6, 4],
@@ -843,15 +1169,16 @@
     }
 
     async function runCalculator() {
-        const idx    = parseInt(document.getElementById('calcEtf').value, 10);
-        const etf    = ETF_LIST[idx];
+        const etfId = document.getElementById('calcEtf').value;
+        const etf   = ALL_ETFS.find(e => e.id === etfId);
+        if (!etf) { showCalcError('Wybierz poprawny ETF.'); return; }
         const dateStr = document.getElementById('calcDate').value;
         const amount = parseFloat(document.getElementById('calcAmount').value);
 
-        if (!dateStr)               { showCalcError('Please select a start date.'); return; }
-        if (!amount || amount <= 0) { showCalcError('Please enter a valid PLN amount.'); return; }
+        if (!dateStr)               { showCalcError('Wybierz datę początkową.'); return; }
+        if (!amount || amount <= 0) { showCalcError('Podaj poprawną kwotę w PLN.'); return; }
         const startDate = new Date(dateStr);
-        if (startDate >= new Date()) { showCalcError('Start date must be in the past.'); return; }
+        if (startDate >= new Date()) { showCalcError('Data początkowa musi być z przeszłości.'); return; }
 
         const d1 = dateStr.replace(/-/g, '');
         const d2 = stooqDateStr(new Date());
@@ -869,7 +1196,7 @@
             const csv  = await res.text();
             const rows = parseStooqCSV(csv);
 
-            if (rows.length === 0) throw new Error('No trading data found for this date range. Try a more recent start date.');
+            if (rows.length === 0) throw new Error('Brak danych handlowych dla wybranego zakresu dat. Spróbuj późniejszej daty początkowej.');
 
             const startPrice   = rows[0].close;
             const labels       = rows.map(r => r.date);
@@ -882,29 +1209,29 @@
 
             document.getElementById('calcSummary').innerHTML = `
                 <div class="calc-stat">
-                    <div class="calc-stat-label">Invested</div>
+                    <div class="calc-stat-label">Zainwestowano</div>
                     <div class="calc-stat-value">${fmtPLN(amount)}</div>
                 </div>
                 <div class="calc-stat">
-                    <div class="calc-stat-label">Value Today</div>
+                    <div class="calc-stat-label">Wartość dziś</div>
                     <div class="calc-stat-value" style="color:${gainColor}">${fmtPLN(currentValue)}</div>
                 </div>
                 <div class="calc-stat">
-                    <div class="calc-stat-label">Gain / Loss</div>
+                    <div class="calc-stat-label">Zysk / Strata</div>
                     <div class="calc-stat-value" style="color:${gainColor}">
                         ${gainSign}${fmtPLN(gain)}
                         <span style="font-size:0.78rem; font-weight:600; display:block;">(${gainSign}${gainPct.toFixed(2)}%)</span>
                     </div>
                 </div>
                 <div class="calc-stat">
-                    <div class="calc-stat-label">Trading Days</div>
+                    <div class="calc-stat-label">Dni handlowych</div>
                     <div class="calc-stat-value" style="font-size:1rem;">${rows.length}</div>
                 </div>
             `;
 
             const noteText = etf.currency !== 'PLN'
-                ? `\u26a0\ufe0f ${etf.symbol} is priced in ${etf.currency}. This calculator tracks the ETF\u2019s price return only and does not adjust for PLN/${etf.currency} exchange rate fluctuations.`
-                : `Data source: Stooq. Past performance does not guarantee future results.`;
+                ? `\u26a0\ufe0f ${etf.symbol} jest wyceniany w ${etf.currency}. Kalkulator śledzi wyłącznie stopę zwrotu ETF i nie uwzględnia zmian kursu PLN/${etf.currency}.`
+                : `Źródło danych: Stooq. Wyniki historyczne nie gwarantują przyszłych zwrotów.`;
             document.getElementById('calcNote').textContent = noteText;
 
             renderCalcChart(labels, values, amount, etf.symbol);

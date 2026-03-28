@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker Portfeli ETF</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="sparklines.js"></script>
     <style>
         :root {
             --bg: #0f1117;
@@ -767,8 +768,6 @@
     let refreshTimer      = null;
     let countdownInterval = null;
     let nextRefreshTime   = null;
-    const sparklineCache  = {};   // etf.id → [{date, close}]
-    const sparkCharts     = {};   // etf.id → Chart instance
 
     // ── Collapse / expand a portfolio section ─────────────────
     function togglePortfolio(bodyId, header) {
@@ -860,7 +859,6 @@
                 <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
                 <div class="sparkline-label">Od 01.01.2026</div>
             `;
-            requestAnimationFrame(() => drawSparkline(etf.id, sparklineCache[etf.id]));
             return;
         }
 
@@ -917,55 +915,6 @@
             <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
             <div class="sparkline-label">Od 01.01.2026</div>
         `;
-        requestAnimationFrame(() => drawSparkline(etf.id, sparklineCache[etf.id]));
-    }
-
-    // ── Per-ETF sparkline chart (01.01.2026 → today) ─────────
-    function drawSparkline(etfId, rows) {
-        if (!rows || rows.length < 2) return;
-        const canvas = document.getElementById(`spark-${etfId}`);
-        if (!canvas) return;
-        if (sparkCharts[etfId]) { sparkCharts[etfId].destroy(); delete sparkCharts[etfId]; }
-        const closes = rows.map(r => r.close);
-        const isUp   = closes[closes.length - 1] >= closes[0];
-        const color  = isUp ? '#10b981' : '#ef4444';
-        const ctx    = canvas.getContext('2d');
-        const h      = canvas.parentElement.clientHeight || 60;
-        const grad   = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, color + '44');
-        grad.addColorStop(1, color + '00');
-        sparkCharts[etfId] = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: rows.map(r => r.date),
-                datasets: [{ data: closes, borderColor: color, borderWidth: 1.5,
-                    fill: true, backgroundColor: grad, pointRadius: 0, tension: 0.3 }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, animation: false,
-                plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                scales: { x: { display: false }, y: { display: false } },
-            }
-        });
-    }
-
-    async function fetchAllSparklines() {
-        const PROXY = 'https://corsproxy.io/?';
-        const d2 = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        await Promise.allSettled(ALL_ETFS.map(async etf => {
-            try {
-                const url = `https://stooq.com/q/d/l/?s=${etf.stooqSymbol}&d1=20260101&d2=${d2}&i=d`;
-                const res = await fetch(PROXY + url);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const rows = parseStooqCSV(await res.text());
-                if (rows.length > 0) {
-                    sparklineCache[etf.id] = rows;
-                    requestAnimationFrame(() => drawSparkline(etf.id, rows));
-                }
-            } catch (e) {
-                console.warn(`[Sparkline] Failed for ${etf.symbol}:`, e);
-            }
-        }));
     }
 
     // ── Main fetch — Stooq via corsproxy.io (parallel per-symbol) ─
@@ -1012,8 +961,7 @@
     function onManualRefresh() {
         clearTimeout(refreshTimer);
         clearInterval(countdownInterval);
-        fetchAllPrices();
-        fetchAllSparklines();
+        fetchAllPrices().then(() => fetchAllSparklines());
         startCountdown();
     }
 
@@ -1039,8 +987,7 @@
     // ── Initialise ────────────────────────────────────────────
     buildGrid();           // render skeleton cards from PORTFOLIOS
     buildCalcDropdown();   // populate calculator ETF selector from PORTFOLIOS
-    fetchAllPrices();      // kick off first live-price fetch
-    fetchAllSparklines();  // load per-ETF YTD sparklines
+    fetchAllPrices().then(() => fetchAllSparklines()); // prices first, then sparklines
     startCountdown();
 
     // ── Investment Calculator ─────────────────────────────────

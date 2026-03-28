@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker Portfeli ETF</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-    <script src="sparklines.js"></script>
     <style>
         :root {
             --bg: #0f1117;
@@ -484,18 +483,6 @@
         }
         .etf-info-link:hover { opacity: 1; text-decoration: underline; }
 
-        .sparkline-wrap {
-            margin-top: 0.85rem;
-            height: 60px;
-            position: relative;
-        }
-        .sparkline-label {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            margin-top: 0.2rem;
-            text-align: center;
-        }
-
         .person-body .etf-grid {
             grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
         }
@@ -808,8 +795,6 @@
                                     <span class="stat-value placeholder-val">—</span>
                                 </div>`).join('')}
                             </div>
-                            <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
-                            <div class="sparkline-label">Od 01.01.2026</div>
                         </div>`).join('')}
                     </div>
                 </div>
@@ -856,8 +841,6 @@
                 <div class="etf-description">${etf.description}</div>
                 ${etf.infoUrl ? `<a class="etf-info-link" href="${etf.infoUrl}" target="_blank" rel="noopener noreferrer">🔗 Więcej informacji</a>` : ''}
                 <p class="error-msg">⚠ Dane niedostępne</p>
-                <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
-                <div class="sparkline-label">Od 01.01.2026</div>
             `;
             return;
         }
@@ -912,8 +895,6 @@
                     <span class="stat-value">${data.volume ? parseInt(data.volume).toLocaleString() : '—'}</span>
                 </div>
             </div>
-            <div class="sparkline-wrap"><canvas id="spark-${etf.id}"></canvas></div>
-            <div class="sparkline-label">Od 01.01.2026</div>
         `;
     }
 
@@ -961,7 +942,7 @@
     function onManualRefresh() {
         clearTimeout(refreshTimer);
         clearInterval(countdownInterval);
-        fetchAllPrices().then(() => fetchAllSparklines());
+        fetchAllPrices();
         startCountdown();
     }
 
@@ -987,7 +968,7 @@
     // ── Initialise ────────────────────────────────────────────
     buildGrid();           // render skeleton cards from PORTFOLIOS
     buildCalcDropdown();   // populate calculator ETF selector from PORTFOLIOS
-    fetchAllPrices().then(() => fetchAllSparklines()); // prices first, then sparklines
+    fetchAllPrices();      // kick off first live-price fetch
     startCountdown();
 
     // ── Investment Calculator ─────────────────────────────────

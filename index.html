@@ -1060,19 +1060,13 @@
 
     // ── Calculator — populate ETF dropdown ────────────────────
     function buildCalcSelect() {
-        const seen    = new Set();
-        const unique  = [];
-        for (const portfolio of PORTFOLIOS) {
-            for (const etf of portfolio.etfs) {
-                if (!seen.has(etf.stooqSymbol)) {
-                    seen.add(etf.stooqSymbol);
-                    unique.push(etf);
-                }
-            }
-        }
         const sel = document.getElementById('calc-etf-select');
-        sel.innerHTML = unique.map(etf =>
-            `<option value="${etf.yahooSymbol}" data-currency="${etf.currency}" data-symbol="${etf.symbol}">${etf.symbol} — ${etf.name} (${etf.currency})</option>`
+        sel.innerHTML = PORTFOLIOS.map(portfolio =>
+            `<optgroup label="${portfolio.avatar} ${portfolio.name}">${
+                portfolio.etfs.map(etf =>
+                    `<option value="${etf.yahooSymbol}" data-currency="${etf.currency}" data-symbol="${etf.symbol}">${etf.symbol} — ${etf.name} (${etf.currency})</option>`
+                ).join('')
+            }</optgroup>`
         ).join('');
     }
 

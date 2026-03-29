@@ -191,6 +191,96 @@ async function testHistoricalData() {
     }
 }
 
+// ── TEST 4: Kalkulator historyczny — symulacja pełnego przepływu ─────────
+// Testuje te same ETF-y i zakresy dat co przyciski preset w kalkulatorze.
+// Używa bezpośredniego dostępu do Stooq (jak poprawiona wersja index.html).
+async function testCalculator() {
+    header('TEST 4 — Kalkulator historyczny (symulacja presetów)');
+
+    // Oblicz d2 z uwzględnieniem weekendu (taki sam algorytm co w index.html)
+    const today = new Date();
+    const dow = today.getDay();
+    const d2Date = new Date(today);
+    if (dow === 0) d2Date.setDate(d2Date.getDate() - 2);
+    if (dow === 6) d2Date.setDate(d2Date.getDate() - 1);
+    if (dow === 0 || dow === 6) {
+        info(`Dziś jest weekend — d2 cofnięte do: ${d2Date.toLocaleDateString('pl-PL')}`);
+    }
+
+    // Pobierz sesję (wymagane przez Stooq CSV)
+    let sessionCookies = '';
+    try {
+        const homeRes = await fetch(`${STOOQ_BASE}/`, { headers: HEADERS });
+        const rawCookies = homeRes.headers.getSetCookie?.() ?? [];
+        sessionCookies = rawCookies.map(c => c.split(';')[0]).join('; ');
+    } catch { /* kontynuuj bez ciasteczek */ }
+
+    const csvHeaders = { ...HEADERS, ...(sessionCookies ? { 'Cookie': sessionCookies } : {}) };
+
+    // Presetowe zakresy dat (etykieta, miesiące wstecz)
+    const presets = [
+        { label: '3M',  months: 3  },
+        { label: '6M',  months: 6  },
+        { label: '1R',  months: 12 },
+        { label: '3R',  months: 36 },
+        { label: '5R',  months: 60 },
+    ];
+
+    // Po jednym ETF z każdego portfela
+    const TEST_ETFS = [
+        ALL_ETFS.find(e => e.symbol === 'ETFBSPXPL'),   // Leo / GPW / PLN
+        ALL_ETFS.find(e => e.symbol === 'CSPX'),         // Mamus / LSE / USD
+        ALL_ETFS.find(e => e.symbol === 'SMH'),          // Marcelinka / LSE / USD
+        ALL_ETFS.find(e => e.symbol === 'VWRA'),         // Kacper / LSE / USD
+    ];
+
+    let passed = 0;
+    let failed = 0;
+
+    for (const etf of TEST_ETFS) {
+        console.log(`\n  ${CYAN}${BOLD}${etf.symbol}${RESET} ${CYAN}[${etf.portfolio}]${RESET}`);
+
+        for (const preset of presets) {
+            const d1Date = new Date(d2Date);
+            d1Date.setMonth(d1Date.getMonth() - preset.months);
+            const d1 = isoDate(d1Date);
+            const d2 = isoDate(d2Date);
+
+            const url = `${STOOQ_BASE}/q/d/l/?s=${etf.stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
+
+            try {
+                const res = await fetch(url, { headers: csvHeaders });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const csv = await res.text();
+
+                const lines = csv.trim().split('\n').filter(Boolean);
+                if (lines.length < 2) {
+                    warn(`  ${preset.label.padEnd(4)} (${d1}→${d2}) — brak danych handlowych`);
+                    failed++;
+                    continue;
+                }
+
+                const dataLines = lines.slice(1);
+                const parseClose = row => parseFloat(row.split(',')[4]);
+                const firstClose = parseClose(dataLines[0]);
+                const lastClose  = parseClose(dataLines[dataLines.length - 1]);
+                const ret        = ((lastClose - firstClose) / firstClose * 100).toFixed(2);
+                const sign       = ret >= 0 ? '+' : '';
+
+                ok(`  ${preset.label.padEnd(4)} (${d1}→${d2}) — ${dataLines.length} dni  |  zwrot: ${sign}${ret}%  |  kurs: ${firstClose} → ${lastClose} ${etf.currency}`);
+                passed++;
+            } catch (e) {
+                fail(`  ${preset.label.padEnd(4)} (${d1}→${d2}) — Błąd: ${e.message}`);
+                failed++;
+            }
+        }
+    }
+
+    const total = TEST_ETFS.length * presets.length;
+    console.log(`\n  Wynik: ${GREEN}${passed} OK${RESET}  /  ${failed > 0 ? RED : RESET}${failed} BŁĄD${RESET}  z ${total} kombinacji`);
+    return failed === 0;
+}
+
 // ── Weryfikacja wersji Node ─────────────────────────────────────────────
 
 function checkNodeVersion() {
@@ -216,6 +306,7 @@ async function main() {
     const proxyOk     = await testProxy();
     const priceResult = await testCurrentPrices();
     const histOk      = await testHistoricalData();
+    const calcOk      = await testCalculator();
 
     header('PODSUMOWANIE');
 
@@ -229,6 +320,9 @@ async function main() {
     if (histOk === true)        ok('Dane historyczne CSV działają poprawnie');
     else if (histOk === 'skip') warn('Endpoint CSV wymaga sesji przeglądarki — sprawdź ręcznie przez kalkulator w index.html');
     else                        fail('Dane historyczne CSV niedostępne');
+
+    if (calcOk)  ok('Kalkulator — wszystkie presetowe zakresy i ETF dają dane');
+    else         fail('Kalkulator — jeden lub więcej zakresów nie zwróciło danych');
 
     console.log('');
 }

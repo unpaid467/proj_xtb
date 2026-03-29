@@ -1176,10 +1176,20 @@
         document.getElementById('calcBtn').disabled = true;
 
         try {
-            const PROXY    = 'https://corsproxy.io/?';
             const stooqUrl = `https://stooq.com/q/d/l/?s=${etf.stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
-            const res = await fetch(PROXY + stooqUrl);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            // Próba bezpośrednia (bez proxy) — Stooq CSV jest publicznym endpointem
+            // pobierania danych i zazwyczaj nie wymaga proxy.
+            // Jeśli przeglądarka zablokuje przez CORS, automatycznie używamy corsproxy.io.
+            let res;
+            try {
+                res = await fetch(stooqUrl);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            } catch (_directErr) {
+                const PROXY = 'https://corsproxy.io/?';
+                res = await fetch(PROXY + stooqUrl);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            }
             const csv  = await res.text();
             const rows = parseStooqCSV(csv);
 

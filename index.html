@@ -512,6 +512,29 @@
         }
         .calc-add-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+        .calc-portfolio-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .portfolio-add-btn {
+            background: color-mix(in srgb, var(--pa-color) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--pa-color) 35%, transparent);
+            border-radius: 6px;
+            color: var(--pa-color);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .portfolio-add-btn:hover {
+            background: color-mix(in srgb, var(--pa-color) 25%, transparent);
+            border-color: var(--pa-color);
+        }
+
         .calc-chips {
             display: flex;
             flex-wrap: wrap;
@@ -680,6 +703,7 @@
                     <select class="calc-select" id="calc-etf-select"></select>
                     <button class="calc-add-btn" onclick="addEtf()" title="Dodaj do wykresu">+ Dodaj</button>
                 </div>
+                <div id="calc-portfolio-btns" class="calc-portfolio-btns"></div>
                 <div id="calc-chips"></div>
             </div>
             <div class="calc-control-group">
@@ -1123,12 +1147,28 @@
     function buildCalcSelect() {
         const sel = document.getElementById('calc-etf-select');
         sel.innerHTML = PORTFOLIOS.map(portfolio =>
-            `<optgroup label="${portfolio.avatar} ${portfolio.name}">${
+            `<optgroup label="${portfolio.name}">${
                 portfolio.etfs.map(etf =>
                     `<option value="${etf.yahooSymbol}" data-currency="${etf.currency}" data-symbol="${etf.symbol}">${etf.symbol} — ${etf.name} (${etf.currency})</option>`
                 ).join('')
             }</optgroup>`
         ).join('');
+
+        const container = document.getElementById('calc-portfolio-btns');
+        container.innerHTML = PORTFOLIOS.map(p =>
+            `<button class="portfolio-add-btn" style="--pa-color:${p.color}" onclick="addAllPortfolio('${p.name}')">${p.avatar} ${p.name}</button>`
+        ).join('');
+    }
+
+    function addAllPortfolio(name) {
+        const portfolio = PORTFOLIOS.find(p => p.name === name);
+        if (!portfolio) return;
+        for (const etf of portfolio.etfs) {
+            if (selectedEtfs.find(e => e.yahooSymbol === etf.yahooSymbol)) continue;
+            if (selectedEtfs.length >= CHART_COLORS.length) break;
+            selectedEtfs.push({ yahooSymbol: etf.yahooSymbol, ticker: etf.symbol, currency: etf.currency, color: CHART_COLORS[selectedEtfs.length] });
+        }
+        renderChips();
     }
 
     // ── Multi-ETF selection state ──────────────────────────────

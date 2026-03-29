@@ -1055,7 +1055,11 @@
     }
 
     function stooqDateStr(d) {
-        return d.toISOString().slice(0, 10).replace(/-/g, '');
+        // Use local time to avoid UTC offset shifting the date overnight
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}${m}${day}`;
     }
 
     function fmtPLN(n) {
@@ -1176,14 +1180,19 @@
         const startDate = new Date(dateStr);
         if (startDate >= new Date()) { showCalcError('Data początkowa musi być z przeszłości.'); return; }
 
-        const d1 = dateStr.replace(/-/g, '');
+        // Cofnij d1 do piątku jeśli użytkownik wybrał weekend
+        const d1Date = new Date(dateStr + 'T12:00:00');
+        const d1Dow = d1Date.getDay();
+        if (d1Dow === 0) d1Date.setDate(d1Date.getDate() - 2); // niedziela → piątek
+        if (d1Dow === 6) d1Date.setDate(d1Date.getDate() - 1); // sobota   → piątek
+        const d1 = stooqDateStr(d1Date);
 
         // Cofnij d2 do ostatniego piątku gdy dziś jest weekend — Stooq zwraca
         // pusty CSV dla dat bez sesji giełdowej (sobota/niedziela).
         const d2Date = new Date();
-        const dow = d2Date.getDay();
-        if (dow === 0) d2Date.setDate(d2Date.getDate() - 2); // niedziela → piątek
-        if (dow === 6) d2Date.setDate(d2Date.getDate() - 1); // sobota   → piątek
+        const d2Dow = d2Date.getDay();
+        if (d2Dow === 0) d2Date.setDate(d2Date.getDate() - 2); // niedziela → piątek
+        if (d2Dow === 6) d2Date.setDate(d2Date.getDate() - 1); // sobota   → piątek
         const d2 = stooqDateStr(d2Date);
 
         document.getElementById('calcResult').style.display  = 'none';
@@ -1194,19 +1203,37 @@
         try {
             const stooqUrl = `https://stooq.com/q/d/l/?s=${etf.stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
 
-            // Próba bezpośrednia (bez proxy) — Stooq CSV jest publicznym endpointem
-            // pobierania danych i zazwyczaj nie wymaga proxy.
-            // Jeśli przeglądarka zablokuje przez CORS, automatycznie używamy corsproxy.io.
-            let res;
+            // Zawsze używaj proxy z poprawnie zakodowanym URL.
+            // Bez encodeURIComponent parametry &d1= &d2= &i= są traktowane jako osobne
+            // parametry corsproxy.io zamiast części docelowego URL — Stooq otrzymuje
+            // zapytanie bez zakresu dat i zwraca puste dane (szczególnie w weekend).
+            let csv = null;
+
+            // Próba bezpośrednia — może zadziałać jeśli Stooq pozwala CORS
             try {
-                res = await fetch(stooqUrl);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            } catch (_directErr) {
-                const PROXY = 'https://corsproxy.io/?';
-                res = await fetch(PROXY + stooqUrl);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const directRes = await fetch(stooqUrl);
+                if (directRes.ok) {
+                    const text = await directRes.text();
+                    // Upewnij się, że odpowiedź to CSV, a nie strona HTML
+                    if (text.trim().length > 0 && !text.trim().startsWith('<')) {
+                        csv = text;
+                    }
+                }
+            } catch (_corsErr) { /* CORS zablokował — użyj proxy */ }
+
+            // Proxy z poprawnie zakodowanym URL (d1, d2, i= są częścią zakodowanego URL)
+            if (!csv) {
+                const PROXY = 'https://corsproxy.io/?url=';
+                const proxyRes = await fetch(PROXY + encodeURIComponent(stooqUrl));
+                if (!proxyRes.ok) throw new Error(`HTTP ${proxyRes.status}`);
+                const text = await proxyRes.text();
+                if (text.trim().length > 0 && !text.trim().startsWith('<')) {
+                    csv = text;
+                }
             }
-            const csv  = await res.text();
+
+            if (!csv) throw new Error('Serwer danych zwrócił nieprawidłową odpowiedź. Spróbuj ponownie za chwilę.');
+
             const rows = parseStooqCSV(csv);
 
             if (rows.length === 0) throw new Error('Brak danych handlowych dla wybranego zakresu dat. Upewnij się, że data początkowa to dzień roboczy sprzed dziś, lub spróbuj późniejszej daty.');

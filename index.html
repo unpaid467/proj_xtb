@@ -474,7 +474,7 @@
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
-            margin-bottom: 1rem;
+            margin-top: 0.4rem;
         }
 
         .preset-btn {
@@ -599,15 +599,15 @@
             <div class="calc-control-group">
                 <label class="calc-label" for="calc-start-date">Data początkowa</label>
                 <input class="calc-date-input" type="date" id="calc-start-date">
+                <div class="calc-presets">
+                    <button class="preset-btn" onclick="setPreset(1,'month')">1M</button>
+                    <button class="preset-btn" onclick="setPreset(3,'month')">3M</button>
+                    <button class="preset-btn" onclick="setPreset(6,'month')">6M</button>
+                    <button class="preset-btn active" onclick="setPreset(1,'year')">1R</button>
+                    <button class="preset-btn" onclick="setPreset(5,'year')">5L</button>
+                </div>
             </div>
             <button class="calc-run-btn" id="calc-run-btn" onclick="loadChartData()">Pokaż wykres</button>
-        </div>
-        <div class="calc-presets">
-            <button class="preset-btn" onclick="setPreset(1,'month')">1M</button>
-            <button class="preset-btn" onclick="setPreset(3,'month')">3M</button>
-            <button class="preset-btn" onclick="setPreset(6,'month')">6M</button>
-            <button class="preset-btn active" onclick="setPreset(1,'year')">1R</button>
-            <button class="preset-btn" onclick="setPreset(5,'year')">5L</button>
         </div>
         <div id="calc-status" class="calc-status"></div>
         <div id="calc-stats-row" class="calc-stats" style="display:none;">

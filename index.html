@@ -645,6 +645,7 @@
                     id: 'L_ETFBTCPL_PL',
                     symbol: 'ETFBTCPL',
                     stooqSymbol: 'etfbtcpl.pl',
+                    yahooSymbol: 'ETFBTCPL.WA',
                     exchange: 'GPW',
                     currency: 'PLN',
                     name: 'Beta ETF Bitcoin PFIZ UCITS (Acc)',
@@ -655,6 +656,7 @@
                     id: 'L_GRID_DE',
                     symbol: 'GRID',
                     stooqSymbol: 'grid.de',
+                    yahooSymbol: 'GRID.DE',
                     exchange: 'XETRA',
                     currency: 'EUR',
                     name: 'First Trust Clean Edge Smart Grid UCITS ETF (Acc)',
@@ -665,6 +667,7 @@
                     id: 'L_ETFNATO_PL',
                     symbol: 'ETFNATO',
                     stooqSymbol: 'etfnato.pl',
+                    yahooSymbol: 'ETFNATO.WA',
                     exchange: 'GPW',
                     currency: 'PLN',
                     name: 'HANetf Future of Defense UCITS ETF (Acc)',
@@ -675,6 +678,7 @@
                     id: 'L_CNDX_UK',
                     symbol: 'CNDX',
                     stooqSymbol: 'cndx.uk',
+                    yahooSymbol: 'CNDX.L',
                     exchange: 'LSE',
                     currency: 'USD',
                     name: 'iShares NASDAQ 100 UCITS ETF (Acc)',
@@ -685,6 +689,7 @@
                     id: 'L_ETFBSPXPL_PL',
                     symbol: 'ETFBSPXPL',
                     stooqSymbol: 'etfbspxpl.pl',
+                    yahooSymbol: 'ETFBSPXPL.WA',
                     exchange: 'GPW',
                     currency: 'PLN',
                     name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
@@ -702,6 +707,7 @@
                     id: 'MA_EIMI_UK',
                     symbol: 'EIMI',
                     stooqSymbol: 'eimi.uk',
+                    yahooSymbol: 'EIMI.L',
                     exchange: 'LSE',
                     currency: 'USD',
                     name: 'iShares Core MSCI EM IMI UCITS ETF (Acc)',
@@ -712,6 +718,7 @@
                     id: 'MA_CSPX_UK',
                     symbol: 'CSPX',
                     stooqSymbol: 'cspx.uk',
+                    yahooSymbol: 'CSPX.L',
                     exchange: 'LSE',
                     currency: 'USD',
                     name: 'iShares Core S&P 500 UCITS ETF (Acc)',
@@ -729,6 +736,7 @@
                     id: 'M_SMH_UK',
                     symbol: 'SMH',
                     stooqSymbol: 'smh.uk',
+                    yahooSymbol: 'SMH.L',
                     exchange: 'LSE',
                     currency: 'USD',
                     name: 'VanEck Semiconductor UCITS ETF (Acc)',
@@ -739,6 +747,7 @@
                     id: 'M_ETFBSPXPL_PL',
                     symbol: 'ETFBSPXPL',
                     stooqSymbol: 'etfbspxpl.pl',
+                    yahooSymbol: 'ETFBSPXPL.WA',
                     exchange: 'GPW',
                     currency: 'PLN',
                     name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
@@ -749,6 +758,7 @@
                     id: 'M_INRA_NL',
                     symbol: 'INRA',
                     stooqSymbol: 'inra.nl',
+                    yahooSymbol: 'INRA.AS',
                     exchange: 'AEX',
                     currency: 'USD',
                     name: 'iShares Global Clean Energy UCITS ETF (Acc)',
@@ -766,6 +776,7 @@
                     id: 'K_VWRA_UK',
                     symbol: 'VWRA',
                     stooqSymbol: 'vwra.uk',
+                    yahooSymbol: 'VWRA.L',
                     exchange: 'LSE',
                     currency: 'USD',
                     name: 'Vanguard FTSE All-World UCITS ETF (Acc)',
@@ -776,6 +787,7 @@
                     id: 'K_ETFBNDXPL_PL',
                     symbol: 'ETFBNDXPL',
                     stooqSymbol: 'etfbndxpl.pl',
+                    yahooSymbol: 'ETFBNDXPL.WA',
                     exchange: 'GPW',
                     currency: 'PLN',
                     name: 'Beta ETF Nasdaq-100 PLN-Hedged UCITS (Acc)',
@@ -786,6 +798,7 @@
                     id: 'K_ETFBSPXPL_PL',
                     symbol: 'ETFBSPXPL',
                     stooqSymbol: 'etfbspxpl.pl',
+                    yahooSymbol: 'ETFBSPXPL.WA',
                     exchange: 'GPW',
                     currency: 'PLN',
                     name: 'Beta ETF S&P 500 PLN-Hedged UCITS (Acc)',
@@ -1031,7 +1044,7 @@
         }
         const sel = document.getElementById('calc-etf-select');
         sel.innerHTML = unique.map(etf =>
-            `<option value="${etf.stooqSymbol}" data-currency="${etf.currency}" data-symbol="${etf.symbol}">${etf.symbol} — ${etf.name} (${etf.currency})</option>`
+            `<option value="${etf.yahooSymbol}" data-currency="${etf.currency}" data-symbol="${etf.symbol}">${etf.symbol} — ${etf.name} (${etf.currency})</option>`
         ).join('');
     }
 
@@ -1040,9 +1053,9 @@
 
     async function loadChartData() {
         const sel         = document.getElementById('calc-etf-select');
-        const stooqSymbol = sel.value;
+        const yahooSymbol = sel.value;
         const currency    = sel.selectedOptions[0]?.dataset.currency ?? '';
-        const ticker      = sel.selectedOptions[0]?.dataset.symbol ?? stooqSymbol;
+        const ticker      = sel.selectedOptions[0]?.dataset.symbol ?? yahooSymbol;
         const startDate   = document.getElementById('calc-start-date').value;
 
         const statusEl  = document.getElementById('calc-status');
@@ -1054,42 +1067,42 @@
             return;
         }
 
-        const d1  = startDate.replace(/-/g, '');
-        const d2  = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-
         statusEl.textContent = 'Pobieranie danych…';
         statsRow.style.display  = 'none';
         chartWrap.style.display = 'none';
         document.getElementById('calc-run-btn').disabled = true;
 
         try {
-            const PROXY    = 'https://corsproxy.io/?';
-            const stooqUrl = `https://stooq.com/q/d/l/?s=${stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
-            const res      = await fetch(PROXY + stooqUrl);
+            const PROXY      = 'https://corsproxy.io/?';
+            const period1    = Math.floor(new Date(startDate).getTime() / 1000);
+            const period2    = Math.floor(Date.now() / 1000);
+            const yahooUrl   = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&period1=${period1}&period2=${period2}`;
+            const res        = await fetch(PROXY + yahooUrl);
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            const csv   = await res.text();
-            const lines = csv.trim().split('\n').filter(Boolean);
+            const json   = await res.json();
+            const result = json?.chart?.result?.[0];
 
-            // Stooq returns a short HTML/error page when there's no data or session issue
-            if (lines.length < 2 || !lines[0].toLowerCase().includes('date')) {
-                const preview = lines[0]?.slice(0, 120) ?? '';
-                throw new Error(`Brak danych CSV od Stooq. Odpowiedź: "${preview}"`);
+            if (!result) {
+                const errMsg = json?.chart?.error?.description ?? 'Brak danych od Yahoo Finance';
+                throw new Error(errMsg);
             }
+
+            const timestamps = result.timestamp ?? [];
+            const closes     = result.indicators?.quote?.[0]?.close ?? [];
+
+            if (timestamps.length === 0) throw new Error('Brak notowań w podanym zakresie dat');
 
             const dates  = [];
             const prices = [];
 
-            for (let i = 1; i < lines.length; i++) {
-                const parts = lines[i].split(',');
-                if (parts.length >= 5) {
-                    const close = parseFloat(parts[4]);
-                    if (!isNaN(close) && close > 0) {
-                        dates.push(parts[0].trim());
-                        prices.push(close);
-                    }
-                }
+            for (let i = 0; i < timestamps.length; i++) {
+                const close = closes[i];
+                if (close == null || isNaN(close)) continue;
+                const d = new Date(timestamps[i] * 1000);
+                dates.push(d.toISOString().slice(0, 10));
+                prices.push(close);
             }
 
             if (dates.length === 0) throw new Error('Brak notowań w podanym zakresie dat');

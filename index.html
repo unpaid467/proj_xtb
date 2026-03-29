@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker Portfeli ETF</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --bg: #0f1117;
@@ -372,6 +373,153 @@
             main { padding: 1rem; }
             h1 { font-size: 1.2rem; }
         }
+
+        /* ── Tabs ──────────────────────────────────────────────── */
+        .tab-nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            padding: 0 2rem;
+            overflow-x: auto;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.85rem 1.25rem;
+            transition: color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+            letter-spacing: -0.01em;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── Calculator panel ───────────────────────────────────── */
+        .calc-main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+
+        .calc-controls {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .calc-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .calc-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .calc-select,
+        .calc-date-input {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+            padding: 0.55rem 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+            color-scheme: dark;
+        }
+        .calc-select:focus,
+        .calc-date-input:focus { border-color: var(--accent); }
+        .calc-select option { background: var(--surface2); }
+
+        .calc-run-btn {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.6rem 1.5rem;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+            align-self: flex-end;
+            white-space: nowrap;
+        }
+        .calc-run-btn:hover { opacity: 0.85; }
+        .calc-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .calc-status {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            min-height: 1.2em;
+            margin-bottom: 0.75rem;
+        }
+
+        .calc-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+        }
+        .calc-stat {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.65rem 1.1rem;
+            flex: 1;
+            min-width: 130px;
+        }
+        .calc-stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
+        }
+        .calc-stat-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .calc-stat-value.positive { color: var(--green); }
+        .calc-stat-value.negative { color: var(--red); }
+
+        .calc-chart-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            height: 460px;
+            position: relative;
+        }
+
+        @media (max-width: 640px) {
+            .calc-main { padding: 1rem; }
+            .tab-nav { padding: 0 1rem; }
+            .calc-chart-wrap { height: 320px; }
+        }
     </style>
 </head>
 <body>
@@ -392,6 +540,13 @@
     </div>
 </header>
 
+<nav class="tab-nav">
+    <button class="tab-btn active" data-tab="portfolios" onclick="switchTab('portfolios')">📊 Portfele</button>
+    <button class="tab-btn" data-tab="calculator" onclick="switchTab('calculator')">📈 Wykres ETF</button>
+</nav>
+
+<div id="panel-portfolios" class="tab-panel active">
+
 <main>
     <div class="refresh-bar-container">
         <span class="refresh-bar-label">Następne odświeżenie</span>
@@ -410,6 +565,54 @@
     Dane dostarczone przez <a href="https://stooq.com" target="_blank" rel="noopener noreferrer">Stooq</a>
     &nbsp;·&nbsp; Aktualizacja co godzinę &nbsp;·&nbsp; Ceny mogą być opóŻnione w godzinach handlu
 </footer>
+
+</div><!-- /panel-portfolios -->
+
+<div id="panel-calculator" class="tab-panel">
+    <main class="calc-main">
+        <div class="calc-controls">
+            <div class="calc-control-group">
+                <label class="calc-label" for="calc-etf-select">ETF</label>
+                <select class="calc-select" id="calc-etf-select"></select>
+            </div>
+            <div class="calc-control-group">
+                <label class="calc-label" for="calc-start-date">Data początkowa</label>
+                <input class="calc-date-input" type="date" id="calc-start-date">
+            </div>
+            <button class="calc-run-btn" id="calc-run-btn" onclick="loadChartData()">Pokaż wykres</button>
+        </div>
+        <div id="calc-status" class="calc-status"></div>
+        <div id="calc-stats-row" class="calc-stats" style="display:none;">
+            <div class="calc-stat">
+                <div class="calc-stat-label">Cena startowa</div>
+                <div class="calc-stat-value" id="stat-start">—</div>
+            </div>
+            <div class="calc-stat">
+                <div class="calc-stat-label">Cena aktualna</div>
+                <div class="calc-stat-value" id="stat-end">—</div>
+            </div>
+            <div class="calc-stat">
+                <div class="calc-stat-label">Zmiana</div>
+                <div class="calc-stat-value" id="stat-change">—</div>
+            </div>
+            <div class="calc-stat">
+                <div class="calc-stat-label">Maksimum</div>
+                <div class="calc-stat-value" id="stat-max">—</div>
+            </div>
+            <div class="calc-stat">
+                <div class="calc-stat-label">Minimum</div>
+                <div class="calc-stat-value" id="stat-min">—</div>
+            </div>
+            <div class="calc-stat">
+                <div class="calc-stat-label">Liczba notowań</div>
+                <div class="calc-stat-value" id="stat-days">—</div>
+            </div>
+        </div>
+        <div id="calc-chart-wrap" class="calc-chart-wrap" style="display:none;">
+            <canvas id="price-chart"></canvas>
+        </div>
+    </main>
+</div>
 
 <script>
     // ═══════════════════════════════════════════════════════════
@@ -805,6 +1008,189 @@
     buildGrid();           // render skeleton cards from PORTFOLIOS
     fetchAllPrices();      // kick off first live-price fetch
     startCountdown();
+
+    // ── Tab switching ──────────────────────────────────────────
+    function switchTab(name) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('panel-' + name).classList.add('active');
+        document.querySelector(`.tab-btn[data-tab="${name}"]`).classList.add('active');
+    }
+
+    // ── Calculator — populate ETF dropdown ────────────────────
+    function buildCalcSelect() {
+        const seen    = new Set();
+        const unique  = [];
+        for (const portfolio of PORTFOLIOS) {
+            for (const etf of portfolio.etfs) {
+                if (!seen.has(etf.stooqSymbol)) {
+                    seen.add(etf.stooqSymbol);
+                    unique.push(etf);
+                }
+            }
+        }
+        const sel = document.getElementById('calc-etf-select');
+        sel.innerHTML = unique.map(etf =>
+            `<option value="${etf.stooqSymbol}" data-currency="${etf.currency}" data-symbol="${etf.symbol}">${etf.symbol} — ${etf.name} (${etf.currency})</option>`
+        ).join('');
+    }
+
+    // ── Calculator — fetch historical CSV & render chart ──────
+    let priceChart = null;
+
+    async function loadChartData() {
+        const sel         = document.getElementById('calc-etf-select');
+        const stooqSymbol = sel.value;
+        const currency    = sel.selectedOptions[0]?.dataset.currency ?? '';
+        const ticker      = sel.selectedOptions[0]?.dataset.symbol ?? stooqSymbol;
+        const startDate   = document.getElementById('calc-start-date').value;
+
+        const statusEl  = document.getElementById('calc-status');
+        const statsRow  = document.getElementById('calc-stats-row');
+        const chartWrap = document.getElementById('calc-chart-wrap');
+
+        if (!startDate) {
+            statusEl.textContent = 'Wybierz datę początkową.';
+            return;
+        }
+
+        const d1  = startDate.replace(/-/g, '');
+        const d2  = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+        statusEl.textContent = 'Pobieranie danych…';
+        statsRow.style.display  = 'none';
+        chartWrap.style.display = 'none';
+        document.getElementById('calc-run-btn').disabled = true;
+
+        try {
+            const PROXY    = 'https://corsproxy.io/?';
+            const stooqUrl = `https://stooq.com/q/d/l/?s=${encodeURIComponent(stooqSymbol)}&d1=${d1}&d2=${d2}&i=d`;
+            const res      = await fetch(PROXY + encodeURIComponent(stooqUrl));
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const csv   = await res.text();
+            const lines = csv.trim().split('\n');
+
+            if (lines.length < 2) throw new Error('Brak danych historycznych dla wybranego ETF i zakresu dat');
+
+            const dates  = [];
+            const prices = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',');
+                if (parts.length >= 5) {
+                    const close = parseFloat(parts[4]);
+                    if (!isNaN(close) && close > 0) {
+                        dates.push(parts[0].trim());
+                        prices.push(close);
+                    }
+                }
+            }
+
+            if (dates.length === 0) throw new Error('Brak notowań w podanym zakresie dat');
+
+            // Stats
+            const first  = prices[0];
+            const last   = prices[prices.length - 1];
+            const maxP   = Math.max(...prices);
+            const minP   = Math.min(...prices);
+            const chPct  = ((last - first) / first) * 100;
+            const isPos  = last >= first;
+
+            document.getElementById('stat-start').textContent  = `${first.toFixed(2)} ${currency}`;
+            document.getElementById('stat-end').textContent    = `${last.toFixed(2)} ${currency}`;
+            const chEl = document.getElementById('stat-change');
+            chEl.textContent  = `${isPos ? '+' : ''}${chPct.toFixed(2)}%`;
+            chEl.className    = 'calc-stat-value ' + (isPos ? 'positive' : 'negative');
+            document.getElementById('stat-max').textContent    = `${maxP.toFixed(2)} ${currency}`;
+            document.getElementById('stat-min').textContent    = `${minP.toFixed(2)} ${currency}`;
+            document.getElementById('stat-days').textContent   = `${dates.length}`;
+
+            statsRow.style.display  = 'flex';
+
+            renderPriceChart(dates, prices, ticker, currency);
+            chartWrap.style.display = 'block';
+            statusEl.textContent    = '';
+
+        } catch (e) {
+            statusEl.textContent = `Błąd: ${e.message}`;
+        } finally {
+            document.getElementById('calc-run-btn').disabled = false;
+        }
+    }
+
+    function renderPriceChart(dates, prices, ticker, currency) {
+        if (priceChart) { priceChart.destroy(); priceChart = null; }
+
+        const first   = prices[0];
+        const last    = prices[prices.length - 1];
+        const isPos   = last >= first;
+        const color   = isPos ? '#10b981' : '#ef4444';
+
+        const canvas  = document.getElementById('price-chart');
+        priceChart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: `${ticker} (${currency})`,
+                    data: prices,
+                    borderColor: color,
+                    backgroundColor: color + '1a',
+                    fill: true,
+                    pointRadius: dates.length > 150 ? 0 : 3,
+                    pointHoverRadius: 5,
+                    borderWidth: 2,
+                    tension: 0.1,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#e2e8f0', font: { size: 13 } }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} ${currency}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#8892a4',
+                            maxTicksLimit: 12,
+                            maxRotation: 0,
+                        },
+                        grid: { color: '#2d3244' }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#8892a4',
+                            callback: val => `${val.toFixed(2)}`
+                        },
+                        grid: { color: '#2d3244' }
+                    }
+                },
+                interaction: { mode: 'nearest', axis: 'x', intersect: false }
+            }
+        });
+    }
+
+    // Initialise calculator dropdown
+    buildCalcSelect();
+
+    // Default start date: 1 year ago
+    (function setDefaultDate() {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+        document.getElementById('calc-start-date').value = d.toISOString().slice(0, 10);
+    })();
 
 </script>
 

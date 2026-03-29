@@ -569,18 +569,27 @@
             </div>
             <div class="calc-field">
                 <label class="calc-label" for="calcDate">Data początkowa</label>
-                <input type="date" id="calcDate" oninput="document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'))" />
+                <input type="date" id="calcDate" oninput="document.querySelectorAll('.date-preset-btn').forEach(b=>b.classList.remove('active'))" />
                 <div class="date-presets">
-                    <button class="preset-btn" onclick="setCalcDatePreset(3,'M',this)" title="3 miesiące temu">3M</button>
-                    <button class="preset-btn" onclick="setCalcDatePreset(6,'M',this)" title="6 miesięcy temu">6M</button>
-                    <button class="preset-btn" onclick="setCalcDatePreset(1,'R',this)" title="1 rok temu">1R</button>
-                    <button class="preset-btn" onclick="setCalcDatePreset(3,'R',this)" title="3 lata temu">3R</button>
-                    <button class="preset-btn" onclick="setCalcDatePreset(5,'R',this)" title="5 lat temu">5R</button>
+                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(3,'M',this)" title="3 miesiące temu">3M</button>
+                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(6,'M',this)" title="6 miesięcy temu">6M</button>
+                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(1,'R',this)" title="1 rok temu">1R</button>
+                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(3,'R',this)" title="3 lata temu">3R</button>
+                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(5,'R',this)" title="5 lat temu">5R</button>
                 </div>
             </div>
             <div class="calc-field">
                 <label class="calc-label" for="calcAmount">Kwota (PLN)</label>
-                <input type="number" id="calcAmount" placeholder="np. 10 000" min="1" step="1" />
+                <input type="number" id="calcAmount" placeholder="np. 10 000" min="1" step="1" oninput="document.querySelectorAll('.amount-preset-btn').forEach(b=>b.classList.remove('active'))" />
+                <div class="date-presets">
+                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(100,this)">100</button>
+                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(200,this)">200</button>
+                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(300,this)">300</button>
+                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(400,this)">400</button>
+                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(500,this)">500</button>
+                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(1000,this)">1000</button>
+                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(2000,this)">2000</button>
+                </div>
             </div>
             <button class="calc-btn" id="calcBtn" onclick="runCalculator()">Oblicz ↗</button>
         </div>
@@ -1034,7 +1043,14 @@
             d.setFullYear(d.getFullYear() - value);
         }
         document.getElementById('calcDate').value = d.toISOString().slice(0, 10);
-        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.date-preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    // ── Amount preset buttons ─────────────────────────────────
+    function setCalcAmountPreset(amount, btn) {
+        document.getElementById('calcAmount').value = amount;
+        document.querySelectorAll('.amount-preset-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
     }
 

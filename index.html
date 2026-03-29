@@ -1223,7 +1223,7 @@
 
             // Proxy z poprawnie zakodowanym URL (d1, d2, i= są częścią zakodowanego URL)
             if (!csv) {
-                const PROXY = 'https://corsproxy.io/?url=';
+                const PROXY = 'https://corsproxy.io/?';
                 const proxyRes = await fetch(PROXY + encodeURIComponent(stooqUrl));
                 if (!proxyRes.ok) throw new Error(`HTTP ${proxyRes.status}`);
                 const text = await proxyRes.text();

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker Portfeli ETF</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --bg: #0f1117;
@@ -285,157 +284,6 @@
         footer a { color: var(--accent); text-decoration: none; }
         footer a:hover { text-decoration: underline; }
 
-        /* ── Investment Calculator ─────────────────────────────── */
-        .calc-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.75rem;
-            margin-top: 0;
-        }
-
-        .calc-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: flex-end;
-            margin-bottom: 1.5rem;
-        }
-
-        .calc-field {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .calc-label {
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-        }
-
-        .calc-field select,
-        .calc-field input[type="date"],
-        .calc-field input[type="number"] {
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            padding: 0.55rem 0.85rem;
-            font-size: 0.88rem;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-            color-scheme: dark;
-        }
-
-        .calc-field select:focus,
-        .calc-field input:focus { border-color: var(--accent); }
-
-        .calc-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 0.55rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.88rem;
-            font-weight: 600;
-            font-family: inherit;
-            transition: opacity 0.2s;
-            white-space: nowrap;
-            align-self: flex-end;
-        }
-
-        .calc-btn:hover { opacity: 0.85; }
-        .calc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .calc-summary {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .calc-stat {
-            background: var(--surface2);
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            flex: 1;
-            min-width: 110px;
-        }
-
-        .calc-stat-label {
-            font-size: 0.62rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 0.35rem;
-        }
-
-        .calc-stat-value {
-            font-size: 1.15rem;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-            line-height: 1.3;
-        }
-
-        .calc-chart-wrap {
-            position: relative;
-            height: 300px;
-        }
-
-        .calc-note {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-top: 0.75rem;
-            opacity: 0.75;
-        }
-
-        .calc-loading {
-            text-align: center;
-            padding: 2.5rem;
-            color: var(--text-muted);
-            font-size: 0.88rem;
-        }
-
-        .date-presets {
-            display: flex;
-            gap: 0.3rem;
-            flex-wrap: wrap;
-            margin-top: 0.4rem;
-        }
-
-        .preset-btn {
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            border-radius: 6px;
-            padding: 0.18rem 0.55rem;
-            font-size: 0.72rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            transition: background 0.15s, color 0.15s, border-color 0.15s;
-        }
-
-        .preset-btn:hover {
-            background: rgba(59,130,246,0.18);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .preset-btn.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #fff;
-        }
-
         /* ── Person portfolio cards ────────────────────────────── */
         .portfolios {
             display: flex;
@@ -523,9 +371,6 @@
             header { padding: 1rem; }
             main { padding: 1rem; }
             h1 { font-size: 1.2rem; }
-            .calc-form { flex-direction: column; }
-            .calc-field { min-width: unset; }
-            .calc-chart-wrap { height: 220px; }
         }
     </style>
 </head>
@@ -559,52 +404,6 @@
 
     <div class="portfolios" id="portfolios"></div>
 
-    <!-- ── Investment Calculator ─────────────────────────── -->
-    <p class="section-label" style="margin-top:2.5rem;">Kalkulator historyczny</p>
-    <div class="calc-card">
-        <div class="calc-form">
-            <div class="calc-field">
-                <label class="calc-label" for="calcEtf">ETF</label>
-                <select id="calcEtf"><!-- populated by buildCalcDropdown() --></select>
-            </div>
-            <div class="calc-field">
-                <label class="calc-label" for="calcDate">Data początkowa</label>
-                <input type="date" id="calcDate" oninput="document.querySelectorAll('.date-preset-btn').forEach(b=>b.classList.remove('active'))" />
-                <div class="date-presets">
-                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(3,'M',this)" title="3 miesiące temu">3M</button>
-                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(6,'M',this)" title="6 miesięcy temu">6M</button>
-                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(1,'R',this)" title="1 rok temu">1R</button>
-                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(3,'R',this)" title="3 lata temu">3R</button>
-                    <button class="preset-btn date-preset-btn" onclick="setCalcDatePreset(5,'R',this)" title="5 lat temu">5R</button>
-                </div>
-            </div>
-            <div class="calc-field">
-                <label class="calc-label" for="calcAmount">Kwota (PLN)</label>
-                <input type="number" id="calcAmount" placeholder="np. 10 000" min="1" step="1" oninput="document.querySelectorAll('.amount-preset-btn').forEach(b=>b.classList.remove('active'))" />
-                <div class="date-presets">
-                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(100,this)">100</button>
-                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(200,this)">200</button>
-                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(300,this)">300</button>
-                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(400,this)">400</button>
-                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(500,this)">500</button>
-                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(1000,this)">1000</button>
-                    <button class="preset-btn amount-preset-btn" onclick="setCalcAmountPreset(2000,this)">2000</button>
-                </div>
-            </div>
-            <button class="calc-btn" id="calcBtn" onclick="runCalculator()">Oblicz ↗</button>
-        </div>
-
-        <div id="calcLoading" class="calc-loading" style="display:none;">⏳ Pobieranie danych historycznych…</div>
-        <div id="calcError" class="error-msg" style="display:none;"></div>
-
-        <div id="calcResult" style="display:none;">
-            <div class="calc-summary" id="calcSummary"></div>
-            <div class="calc-chart-wrap">
-                <canvas id="calcChart"></canvas>
-            </div>
-            <p class="calc-note" id="calcNote"></p>
-        </div>
-    </div>
 </main>
 
 <footer>
@@ -615,8 +414,8 @@
 <script>
     // ═══════════════════════════════════════════════════════════
     //  CONFIGURATION — edit only this section to add/remove ETFs
-    //  or portfolios. Cards, the calculator dropdown, and fetch
-    //  logic all update automatically — no other changes needed.
+    //  or portfolios. Cards and fetch logic all update
+    //  automatically — no other changes needed.
     //
     //  Data source : Stooq  https://stooq.com  (free, no key)
     //  CORS proxy  : corsproxy.io              (no setup needed)
@@ -796,7 +595,7 @@
     ];
 
     // Derived flat list — do not edit; auto-built from PORTFOLIOS above.
-    // Used by fetchAllPrices() and buildCalcDropdown().
+    // Used by fetchAllPrices().
     const ALL_ETFS = PORTFOLIOS.flatMap(p => p.etfs);
 
     // ── State ──────────────────────────────────────────────────
@@ -852,17 +651,6 @@
 
     // ── Number formatter ──────────────────────────────────────
 
-    // -- Auto-build calculator ETF dropdown from PORTFOLIOS -----
-    // Adding an ETF to PORTFOLIOS automatically adds it here.
-    function buildCalcDropdown() {
-        document.getElementById('calcEtf').innerHTML = PORTFOLIOS.map(p =>
-            `<optgroup label="${p.name}">${
-                p.etfs.map(e =>
-                    `<option value="${e.id}">${e.symbol} \u2014 ${e.name} (${e.currency})</option>`
-                ).join('')
-            }</optgroup>`
-        ).join('');
-    }
     function fmt(value, currency) {
         if (value === null || value === undefined || isNaN(value)) return '—';
         const locale = (currency === 'PLN') ? 'pl-PL' : 'en-US';
@@ -1015,275 +803,9 @@
 
     // ── Initialise ────────────────────────────────────────────
     buildGrid();           // render skeleton cards from PORTFOLIOS
-    buildCalcDropdown();   // populate calculator ETF selector from PORTFOLIOS
     fetchAllPrices();      // kick off first live-price fetch
     startCountdown();
 
-    // ── Investment Calculator ─────────────────────────────────
-    (function initCalcDefaults() {
-        // Default start date = 1 year ago
-        const d = new Date();
-        d.setFullYear(d.getFullYear() - 1);
-        const iso = d.toISOString().slice(0, 10);
-        const input = document.getElementById('calcDate');
-        input.value = iso;
-        input.max   = new Date().toISOString().slice(0, 10);
-        // Default amount
-        document.getElementById('calcAmount').value = '10000';
-    })();
-
-    let _calcChart = null;
-
-    // ── Date preset buttons ───────────────────────────────────
-    function setCalcDatePreset(value, unit, btn) {
-        const d = new Date();
-        if (unit === 'M') {
-            d.setMonth(d.getMonth() - value);
-        } else { // 'R' = rok
-            d.setFullYear(d.getFullYear() - value);
-        }
-        document.getElementById('calcDate').value = d.toISOString().slice(0, 10);
-        document.querySelectorAll('.date-preset-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    // ── Amount preset buttons ─────────────────────────────────
-    function setCalcAmountPreset(amount, btn) {
-        document.getElementById('calcAmount').value = amount;
-        document.querySelectorAll('.amount-preset-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    function stooqDateStr(d) {
-        // Use local time to avoid UTC offset shifting the date overnight
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}${m}${day}`;
-    }
-
-    function fmtPLN(n) {
-        return new Intl.NumberFormat('pl-PL', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(n) + '\u00a0PLN';
-    }
-
-    function parseStooqCSV(csv) {
-        const lines = csv.trim().split('\n');
-        if (lines.length < 2) return [];
-        return lines.slice(1).map(line => {
-            const parts = line.split(',');
-            return { date: (parts[0] || '').trim(), close: parseFloat(parts[4]) };
-        }).filter(r => r.date && !isNaN(r.close));
-    }
-
-    // Parser for /q/a2/d/ endpoint (chart data, no cookies required).
-    // Response format: HTML header ... ~NAME~\nDATE,,OPEN,HIGH,LOW,CLOSE,VOL\n...
-    // Rounds d1 to nearest available trading day (handles weekends/holidays).
-    function parseStooqChartData(text, d1, d2) {
-        const firstTilde = text.indexOf('~');
-        if (firstTilde < 0) return [];
-        const secondTilde = text.indexOf('~', firstTilde + 1);
-        if (secondTilde < 0) return [];
-        const dataBlock = text.slice(secondTilde + 1).trim();
-        const allRows = dataBlock.split('\n')
-            .map(line => {
-                const p = line.split(',');
-                const dateRaw = (p[0] || '').trim();
-                const close = parseFloat(p[5]);             // col 5 = Close
-                if (!dateRaw || dateRaw.length !== 8 || isNaN(close)) return null;
-                const formatted = dateRaw.slice(0,4)+'-'+dateRaw.slice(4,6)+'-'+dateRaw.slice(6,8);
-                return { date: formatted, dateNum: dateRaw, close };
-            })
-            .filter(r => r != null);
-
-        // Find start index: nearest trading day on or before d1.
-        // If d1 is after all data, use the last available day.
-        // If d1 is before all data, use the first available day.
-        let startIdx = allRows.findIndex(r => r.dateNum >= d1);
-        if (startIdx < 0) {
-            startIdx = allRows.length - 1;                                // d1 past end → last row
-        } else if (allRows[startIdx].dateNum !== d1 && startIdx > 0) {
-            startIdx--;                                                   // previous trading day
-        }
-
-        return allRows.slice(startIdx).filter(r => r.dateNum <= d2);
-    }
-
-    function showCalcError(msg) {
-        document.getElementById('calcLoading').style.display = 'none';
-        document.getElementById('calcResult').style.display  = 'none';
-        const el = document.getElementById('calcError');
-        el.textContent = '\u26a0 ' + msg;
-        el.style.display = 'block';
-    }
-
-    function renderCalcChart(labels, values, initialAmount, etfLabel) {
-        const ctx = document.getElementById('calcChart').getContext('2d');
-        if (_calcChart) { _calcChart.destroy(); _calcChart = null; }
-
-        const last      = values[values.length - 1];
-        const isUp      = last >= initialAmount;
-        const lineColor = isUp ? '#10b981' : '#ef4444';
-        const fillColor = isUp ? 'rgba(16,185,129,0.07)' : 'rgba(239,68,68,0.07)';
-
-        _calcChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: etfLabel + ' — wartość (PLN)',
-                        data: values,
-                        borderColor: lineColor,
-                        backgroundColor: fillColor,
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 0,
-                        pointHoverRadius: 4,
-                        borderWidth: 2,
-                    },
-                    {
-                        label: 'Zainwestowana kwota',
-                        data: new Array(values.length).fill(initialAmount),
-                        borderColor: 'rgba(136,146,164,0.35)',
-                        borderDash: [6, 4],
-                        borderWidth: 1.5,
-                        pointRadius: 0,
-                        fill: false,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
-                plugins: {
-                    legend: {
-                        labels: { color: '#8892a4', font: { size: 11 }, boxWidth: 18 }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1a1d27',
-                        borderColor: '#2d3244',
-                        borderWidth: 1,
-                        titleColor: '#e2e8f0',
-                        bodyColor: '#8892a4',
-                        padding: 10,
-                        callbacks: {
-                            label: c => ` ${c.dataset.label}: ${
-                                new Intl.NumberFormat('pl-PL', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                }).format(c.parsed.y)
-                            }\u00a0PLN`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#8892a4', font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 },
-                        grid:  { color: '#2d3244' }
-                    },
-                    y: {
-                        ticks: {
-                            color: '#8892a4',
-                            font: { size: 10 },
-                            callback: v => new Intl.NumberFormat('pl-PL', {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0,
-                            }).format(v) + '\u00a0PLN'
-                        },
-                        grid: { color: '#2d3244' }
-                    }
-                }
-            }
-        });
-    }
-
-    async function runCalculator() {
-        const etfId = document.getElementById('calcEtf').value;
-        const etf   = ALL_ETFS.find(e => e.id === etfId);
-        if (!etf) { showCalcError('Wybierz poprawny ETF.'); return; }
-        const dateStr = document.getElementById('calcDate').value;
-        const amount = parseFloat(document.getElementById('calcAmount').value);
-
-        if (!dateStr)               { showCalcError('Wybierz datę początkową.'); return; }
-        if (!amount || amount <= 0) { showCalcError('Podaj poprawną kwotę w PLN.'); return; }
-        const startDate = new Date(dateStr);
-        if (startDate >= new Date()) { showCalcError('Data początkowa musi być z przeszłości.'); return; }
-
-        // d1/d2 as YYYYMMDD for filtering — no weekend adjustment needed,
-        // the chart endpoint returns only trading days so nearest match is automatic.
-        const d1 = dateStr.replace(/-/g, '');
-        const d2 = stooqDateStr(new Date());
-
-        document.getElementById('calcResult').style.display  = 'none';
-        document.getElementById('calcError').style.display   = 'none';
-        document.getElementById('calcLoading').style.display = 'block';
-        document.getElementById('calcBtn').disabled = true;
-
-        try {
-            // Use /q/a2/d/ (chart data endpoint) — works WITHOUT session cookies,
-            // unlike /q/d/l/ (CSV download) which returns empty data without cookies.
-            const PROXY = 'https://corsproxy.io/?';
-            const stooqUrl = `https://stooq.com/q/a2/d/?s=${etf.stooqSymbol}&i=d`;
-
-            const res = await fetch(PROXY + stooqUrl);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const text = await res.text();
-            const rows = parseStooqChartData(text, d1, d2);
-
-            if (rows.length === 0) throw new Error('Brak danych handlowych dla wybranego zakresu dat. Upewnij się, że data początkowa to dzień roboczy sprzed dziś, lub spróbuj późniejszej daty.');
-
-            const startPrice   = rows[0].close;
-            const labels       = rows.map(r => r.date);
-            const values       = rows.map(r => parseFloat((amount * r.close / startPrice).toFixed(2)));
-            const currentValue = values[values.length - 1];
-            const gain         = currentValue - amount;
-            const gainPct      = (gain / amount) * 100;
-            const gainSign     = gain >= 0 ? '+' : '';
-            const gainColor    = gain >= 0 ? 'var(--green)' : 'var(--red)';
-
-            document.getElementById('calcSummary').innerHTML = `
-                <div class="calc-stat">
-                    <div class="calc-stat-label">Zainwestowano</div>
-                    <div class="calc-stat-value">${fmtPLN(amount)}</div>
-                </div>
-                <div class="calc-stat">
-                    <div class="calc-stat-label">Wartość dziś</div>
-                    <div class="calc-stat-value" style="color:${gainColor}">${fmtPLN(currentValue)}</div>
-                </div>
-                <div class="calc-stat">
-                    <div class="calc-stat-label">Zysk / Strata</div>
-                    <div class="calc-stat-value" style="color:${gainColor}">
-                        ${gainSign}${fmtPLN(gain)}
-                        <span style="font-size:0.78rem; font-weight:600; display:block;">(${gainSign}${gainPct.toFixed(2)}%)</span>
-                    </div>
-                </div>
-                <div class="calc-stat">
-                    <div class="calc-stat-label">Dni handlowych</div>
-                    <div class="calc-stat-value" style="font-size:1rem;">${rows.length}</div>
-                </div>
-            `;
-
-            const noteText = etf.currency !== 'PLN'
-                ? `\u26a0\ufe0f ${etf.symbol} jest wyceniany w ${etf.currency}. Kalkulator śledzi wyłącznie stopę zwrotu ETF i nie uwzględnia zmian kursu PLN/${etf.currency}.`
-                : `Źródło danych: Stooq. Wyniki historyczne nie gwarantują przyszłych zwrotów.`;
-            document.getElementById('calcNote').textContent = noteText;
-
-            renderCalcChart(labels, values, amount, etf.symbol);
-
-            document.getElementById('calcLoading').style.display = 'none';
-            document.getElementById('calcResult').style.display  = 'block';
-
-        } catch (err) {
-            showCalcError(err.message);
-        } finally {
-            document.getElementById('calcBtn').disabled = false;
-            document.getElementById('calcLoading').style.display = 'none';
-        }
-    }
 </script>
 
 </body>

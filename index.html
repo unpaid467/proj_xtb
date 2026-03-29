@@ -1161,7 +1161,14 @@
         if (startDate >= new Date()) { showCalcError('Data początkowa musi być z przeszłości.'); return; }
 
         const d1 = dateStr.replace(/-/g, '');
-        const d2 = stooqDateStr(new Date());
+
+        // Cofnij d2 do ostatniego piątku gdy dziś jest weekend — Stooq zwraca
+        // pusty CSV dla dat bez sesji giełdowej (sobota/niedziela).
+        const d2Date = new Date();
+        const dow = d2Date.getDay();
+        if (dow === 0) d2Date.setDate(d2Date.getDate() - 2); // niedziela → piątek
+        if (dow === 6) d2Date.setDate(d2Date.getDate() - 1); // sobota   → piątek
+        const d2 = stooqDateStr(d2Date);
 
         document.getElementById('calcResult').style.display  = 'none';
         document.getElementById('calcError').style.display   = 'none';
@@ -1176,7 +1183,7 @@
             const csv  = await res.text();
             const rows = parseStooqCSV(csv);
 
-            if (rows.length === 0) throw new Error('Brak danych handlowych dla wybranego zakresu dat. Spróbuj późniejszej daty początkowej.');
+            if (rows.length === 0) throw new Error('Brak danych handlowych dla wybranego zakresu dat. Upewnij się, że data początkowa to dzień roboczy sprzed dziś, lub spróbuj późniejszej daty.');
 
             const startPrice   = rows[0].close;
             const labels       = rows.map(r => r.date);

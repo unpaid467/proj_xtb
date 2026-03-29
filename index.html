@@ -491,6 +491,95 @@
         .preset-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
         .preset-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+        .calc-etf-add-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .calc-etf-add-row .calc-select { flex: 1; }
+
+        .calc-add-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 0.55rem 0.9rem;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .calc-add-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        .calc-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+            min-height: 1.8rem;
+        }
+
+        .etf-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border: 1.5px solid;
+            letter-spacing: 0.02em;
+        }
+
+        .etf-chip-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .etf-chip-remove {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 0.9rem;
+            line-height: 1;
+            opacity: 0.6;
+            padding: 0;
+            transition: opacity 0.15s;
+        }
+        .etf-chip-remove:hover { opacity: 1; }
+
+        /* Stats table for multi-ETF */
+        .calc-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        .calc-stats-table th {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            padding: 0.4rem 0.75rem;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+        }
+        .calc-stats-table th:first-child { text-align: left; }
+        .calc-stats-table td {
+            padding: 0.45rem 0.75rem;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            border-bottom: 1px solid var(--border);
+        }
+        .calc-stats-table td:first-child { text-align: left; font-weight: 700; }
+        .calc-stats-table tr:last-child td { border-bottom: none; }
+        .calc-stats-table .positive { color: var(--green); }
+        .calc-stats-table .negative { color: var(--red); }
+
         .calc-status {
             font-size: 0.82rem;
             color: var(--text-muted);
@@ -499,18 +588,11 @@
         }
 
         .calc-stats {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.25rem;
-        }
-        .calc-stat {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 0.65rem 1.1rem;
-            flex: 1;
-            min-width: 130px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1.25rem;
         }
         .calc-stat-label {
             font-size: 0.65rem;
@@ -592,9 +674,13 @@
 <div id="panel-calculator" class="tab-panel">
     <main class="calc-main">
         <div class="calc-controls">
-            <div class="calc-control-group">
+            <div class="calc-control-group" style="flex:2;min-width:260px;">
                 <label class="calc-label" for="calc-etf-select">ETF</label>
-                <select class="calc-select" id="calc-etf-select"></select>
+                <div class="calc-etf-add-row">
+                    <select class="calc-select" id="calc-etf-select"></select>
+                    <button class="calc-add-btn" onclick="addEtf()" title="Dodaj do wykresu">+ Dodaj</button>
+                </div>
+                <div id="calc-chips"></div>
             </div>
             <div class="calc-control-group">
                 <label class="calc-label" for="calc-start-date">Data początkowa</label>
@@ -610,32 +696,7 @@
             <button class="calc-run-btn" id="calc-run-btn" onclick="loadChartData()">Pokaż wykres</button>
         </div>
         <div id="calc-status" class="calc-status"></div>
-        <div id="calc-stats-row" class="calc-stats" style="display:none;">
-            <div class="calc-stat">
-                <div class="calc-stat-label">Cena startowa</div>
-                <div class="calc-stat-value" id="stat-start">—</div>
-            </div>
-            <div class="calc-stat">
-                <div class="calc-stat-label">Cena aktualna</div>
-                <div class="calc-stat-value" id="stat-end">—</div>
-            </div>
-            <div class="calc-stat">
-                <div class="calc-stat-label">Zmiana</div>
-                <div class="calc-stat-value" id="stat-change">—</div>
-            </div>
-            <div class="calc-stat">
-                <div class="calc-stat-label">Maksimum</div>
-                <div class="calc-stat-value" id="stat-max">—</div>
-            </div>
-            <div class="calc-stat">
-                <div class="calc-stat-label">Minimum</div>
-                <div class="calc-stat-value" id="stat-min">—</div>
-            </div>
-            <div class="calc-stat">
-                <div class="calc-stat-label">Liczba notowań</div>
-                <div class="calc-stat-value" id="stat-days">—</div>
-            </div>
-        </div>
+        <div id="calc-stats-row" class="calc-stats" style="display:none;"></div>
         <div id="calc-chart-wrap" class="calc-chart-wrap" style="display:none;">
             <canvas id="price-chart"></canvas>
         </div>
@@ -1070,20 +1131,59 @@
         ).join('');
     }
 
-    // ── Calculator — fetch historical CSV & render chart ──────
+    // ── Multi-ETF selection state ──────────────────────────────
+    const CHART_COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#f97316','#ef4444'];
+    let selectedEtfs = []; // [{yahooSymbol, ticker, currency, color}]
+
+    function addEtf() {
+        const sel      = document.getElementById('calc-etf-select');
+        const yahoo    = sel.value;
+        const ticker   = sel.selectedOptions[0]?.dataset.symbol   ?? yahoo;
+        const currency = sel.selectedOptions[0]?.dataset.currency ?? '';
+
+        if (selectedEtfs.find(e => e.yahooSymbol === yahoo)) return; // already added
+        if (selectedEtfs.length >= CHART_COLORS.length) return;      // max 8
+
+        const color = CHART_COLORS[selectedEtfs.length];
+        selectedEtfs.push({ yahooSymbol: yahoo, ticker, currency, color });
+        renderChips();
+    }
+
+    function removeEtf(yahoo) {
+        selectedEtfs = selectedEtfs.filter(e => e.yahooSymbol !== yahoo);
+        // re-assign colors to keep them packed from index 0
+        selectedEtfs.forEach((e, i) => { e.color = CHART_COLORS[i]; });
+        renderChips();
+    }
+
+    function renderChips() {
+        const container = document.getElementById('calc-chips');
+        if (selectedEtfs.length === 0) {
+            container.innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted);opacity:0.6">Dodaj przynajmniej jeden ETF</span>';
+            return;
+        }
+        container.innerHTML = selectedEtfs.map(e => `
+            <span class="etf-chip" style="color:${e.color};border-color:${e.color}20;background:${e.color}18;">
+                <span class="etf-chip-dot" style="background:${e.color}"></span>
+                ${e.ticker}
+                <button class="etf-chip-remove" onclick="removeEtf('${e.yahooSymbol}')" title="Usuń">✕</button>
+            </span>
+        `).join('');
+    }
+
+    // ── Calculator — fetch & render chart (multi-ETF) ─────────
     let priceChart = null;
 
     async function loadChartData() {
-        const sel         = document.getElementById('calc-etf-select');
-        const yahooSymbol = sel.value;
-        const currency    = sel.selectedOptions[0]?.dataset.currency ?? '';
-        const ticker      = sel.selectedOptions[0]?.dataset.symbol ?? yahooSymbol;
-        const startDate   = document.getElementById('calc-start-date').value;
-
+        const startDate = document.getElementById('calc-start-date').value;
         const statusEl  = document.getElementById('calc-status');
         const statsRow  = document.getElementById('calc-stats-row');
         const chartWrap = document.getElementById('calc-chart-wrap');
 
+        if (selectedEtfs.length === 0) {
+            statusEl.textContent = 'Dodaj przynajmniej jeden ETF przyciskiem "+ Dodaj".';
+            return;
+        }
         if (!startDate) {
             statusEl.textContent = 'Wybierz datę początkową.';
             return;
@@ -1094,64 +1194,38 @@
         chartWrap.style.display = 'none';
         document.getElementById('calc-run-btn').disabled = true;
 
+        const PROXY   = 'https://corsproxy.io/?';
+        const period1 = Math.floor(new Date(startDate).getTime() / 1000);
+        const period2 = Math.floor(Date.now() / 1000);
+
         try {
-            const PROXY      = 'https://corsproxy.io/?';
-            const period1    = Math.floor(new Date(startDate).getTime() / 1000);
-            const period2    = Math.floor(Date.now() / 1000);
-            const yahooUrl   = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&period1=${period1}&period2=${period2}`;
-            const res        = await fetch(PROXY + yahooUrl);
+            const results = await Promise.all(selectedEtfs.map(async etf => {
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${etf.yahooSymbol}?interval=1d&period1=${period1}&period2=${period2}`;
+                const res = await fetch(PROXY + url);
+                if (!res.ok) throw new Error(`${etf.ticker}: HTTP ${res.status}`);
+                const json   = await res.json();
+                const result = json?.chart?.result?.[0];
+                if (!result) throw new Error(`${etf.ticker}: ${json?.chart?.error?.description ?? 'brak danych'}`);
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const timestamps = result.timestamp ?? [];
+                const closes     = result.indicators?.quote?.[0]?.close ?? [];
+                const dates  = [];
+                const prices = [];
+                for (let i = 0; i < timestamps.length; i++) {
+                    const c = closes[i];
+                    if (c == null || isNaN(c)) continue;
+                    dates.push(new Date(timestamps[i] * 1000).toISOString().slice(0, 10));
+                    prices.push(c);
+                }
+                if (dates.length === 0) throw new Error(`${etf.ticker}: brak notowań w wybranym zakresie`);
+                return { ...etf, dates, prices };
+            }));
 
-            const json   = await res.json();
-            const result = json?.chart?.result?.[0];
-
-            if (!result) {
-                const errMsg = json?.chart?.error?.description ?? 'Brak danych od Yahoo Finance';
-                throw new Error(errMsg);
-            }
-
-            const timestamps = result.timestamp ?? [];
-            const closes     = result.indicators?.quote?.[0]?.close ?? [];
-
-            if (timestamps.length === 0) throw new Error('Brak notowań w podanym zakresie dat');
-
-            const dates  = [];
-            const prices = [];
-
-            for (let i = 0; i < timestamps.length; i++) {
-                const close = closes[i];
-                if (close == null || isNaN(close)) continue;
-                const d = new Date(timestamps[i] * 1000);
-                dates.push(d.toISOString().slice(0, 10));
-                prices.push(close);
-            }
-
-            if (dates.length === 0) throw new Error('Brak notowań w podanym zakresie dat');
-
-            // Stats
-            const first  = prices[0];
-            const last   = prices[prices.length - 1];
-            const maxP   = Math.max(...prices);
-            const minP   = Math.min(...prices);
-            const chPct  = ((last - first) / first) * 100;
-            const isPos  = last >= first;
-
-            document.getElementById('stat-start').textContent  = `${first.toFixed(2)} ${currency}`;
-            document.getElementById('stat-end').textContent    = `${last.toFixed(2)} ${currency}`;
-            const chEl = document.getElementById('stat-change');
-            chEl.textContent  = `${isPos ? '+' : ''}${chPct.toFixed(2)}%`;
-            chEl.className    = 'calc-stat-value ' + (isPos ? 'positive' : 'negative');
-            document.getElementById('stat-max').textContent    = `${maxP.toFixed(2)} ${currency}`;
-            document.getElementById('stat-min').textContent    = `${minP.toFixed(2)} ${currency}`;
-            document.getElementById('stat-days').textContent   = `${dates.length}`;
-
-            statsRow.style.display  = 'flex';
-
-            renderPriceChart(dates, prices, ticker, currency);
+            renderStats(results);
+            renderPriceChart(results);
+            statsRow.style.display  = 'block';
             chartWrap.style.display = 'block';
             statusEl.textContent    = '';
-
         } catch (e) {
             statusEl.textContent = `Błąd: ${e.message}`;
         } finally {
@@ -1159,59 +1233,119 @@
         }
     }
 
-    function renderPriceChart(dates, prices, ticker, currency) {
+    // ── Stats table ───────────────────────────────────────────
+    function renderStats(results) {
+        const statsRow = document.getElementById('calc-stats-row');
+        statsRow.innerHTML = `
+            <table class="calc-stats-table">
+                <thead>
+                    <tr>
+                        <th>ETF</th>
+                        <th>Start</th>
+                        <th>Aktualnie</th>
+                        <th>Zmiana</th>
+                        <th>Maks.</th>
+                        <th>Min.</th>
+                        <th>Notowań</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${results.map(r => {
+                        const first  = r.prices[0];
+                        const last   = r.prices[r.prices.length - 1];
+                        const chPct  = ((last - first) / first) * 100;
+                        const isPos  = last >= first;
+                        const sign   = isPos ? '+' : '';
+                        const maxP   = Math.max(...r.prices);
+                        const minP   = Math.min(...r.prices);
+                        return `<tr>
+                            <td><span style="display:inline-flex;align-items:center;gap:0.4rem">
+                                <span style="width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0;display:inline-block"></span>
+                                ${r.ticker}
+                            </span></td>
+                            <td>${first.toFixed(2)} ${r.currency}</td>
+                            <td>${last.toFixed(2)} ${r.currency}</td>
+                            <td class="${isPos ? 'positive' : 'negative'}">${sign}${chPct.toFixed(2)}%</td>
+                            <td>${maxP.toFixed(2)}</td>
+                            <td>${minP.toFixed(2)}</td>
+                            <td>${r.prices.length}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>`;
+    }
+
+    // ── Chart renderer (multi-dataset) ───────────────────────
+    function renderPriceChart(results) {
         if (priceChart) { priceChart.destroy(); priceChart = null; }
 
-        const first   = prices[0];
-        const last    = prices[prices.length - 1];
-        const isPos   = last >= first;
-        const color   = isPos ? '#10b981' : '#ef4444';
+        const multi    = results.length > 1;
+        // For multi-ETF: normalize to % return from first point (Y = % change)
+        // For single ETF: use raw prices
 
-        const canvas  = document.getElementById('price-chart');
+        const datasets = results.map(r => {
+            let data;
+            if (multi) {
+                data = r.prices.map(p => +((p / r.prices[0] - 1) * 100).toFixed(4));
+            } else {
+                data = r.prices;
+            }
+            return {
+                label: `${r.ticker} (${r.currency})`,
+                data,
+                dates: r.dates,
+                borderColor: r.color,
+                backgroundColor: r.color + '18',
+                fill: !multi,
+                pointRadius: r.dates.length > 150 ? 0 : 3,
+                pointHoverRadius: 5,
+                borderWidth: 2,
+                tension: 0.1,
+            };
+        });
+
+        // Use the longest date array as labels; others may be shorter
+        const allDates = results.reduce((a, b) => a.dates.length >= b.dates.length ? a : b).dates;
+
+        // Align all datasets to the common date axis
+        const alignedDatasets = datasets.map((ds, i) => {
+            const r = results[i];
+            const dateMap = new Map(r.dates.map((d, j) => [d, ds.data[j]]));
+            return { ...ds, data: allDates.map(d => dateMap.has(d) ? dateMap.get(d) : null) };
+        });
+
+        const canvas = document.getElementById('price-chart');
         priceChart = new Chart(canvas, {
             type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    label: `${ticker} (${currency})`,
-                    data: prices,
-                    borderColor: color,
-                    backgroundColor: color + '1a',
-                    fill: true,
-                    pointRadius: dates.length > 150 ? 0 : 3,
-                    pointHoverRadius: 5,
-                    borderWidth: 2,
-                    tension: 0.1,
-                }]
-            },
+            data: { labels: allDates, datasets: alignedDatasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                spanGaps: true,
                 plugins: {
-                    legend: {
-                        labels: { color: '#e2e8f0', font: { size: 13 } }
-                    },
+                    legend: { labels: { color: '#e2e8f0', font: { size: 13 } } },
                     tooltip: {
                         mode: 'index',
                         intersect: false,
                         callbacks: {
-                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} ${currency}`
+                            label: ctx => {
+                                const v = ctx.parsed.y;
+                                if (v == null) return null;
+                                if (multi) return `${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+                                return `${ctx.dataset.label}: ${v.toFixed(2)} ${results[0].currency}`;
+                            }
                         }
                     }
                 },
                 scales: {
                     x: {
-                        ticks: {
-                            color: '#8892a4',
-                            maxTicksLimit: 12,
-                            maxRotation: 0,
-                        },
+                        ticks: { color: '#8892a4', maxTicksLimit: 12, maxRotation: 0 },
                         grid: { color: '#2d3244' }
                     },
                     y: {
                         ticks: {
                             color: '#8892a4',
-                            callback: val => `${val.toFixed(2)}`
+                            callback: val => multi ? `${val >= 0 ? '+' : ''}${val.toFixed(1)}%` : val.toFixed(2)
                         },
                         grid: { color: '#2d3244' }
                     }
@@ -1223,6 +1357,7 @@
 
     // Initialise calculator dropdown
     buildCalcSelect();
+    renderChips();
 
     // ── Preset date buttons ───────────────────────────────────
     function setPreset(amount, unit) {

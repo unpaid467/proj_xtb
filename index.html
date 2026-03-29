@@ -1201,39 +1201,14 @@
         document.getElementById('calcBtn').disabled = true;
 
         try {
+            // Użyj tego samego wzorca proxy co fetchAllPrices —
+            // corsproxy.io oczekuje surowego (niekodowanego) URL po '?'
+            const PROXY = 'https://corsproxy.io/?';
             const stooqUrl = `https://stooq.com/q/d/l/?s=${etf.stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
 
-            // Zawsze używaj proxy z poprawnie zakodowanym URL.
-            // Bez encodeURIComponent parametry &d1= &d2= &i= są traktowane jako osobne
-            // parametry corsproxy.io zamiast części docelowego URL — Stooq otrzymuje
-            // zapytanie bez zakresu dat i zwraca puste dane (szczególnie w weekend).
-            let csv = null;
-
-            // Próba bezpośrednia — może zadziałać jeśli Stooq pozwala CORS
-            try {
-                const directRes = await fetch(stooqUrl);
-                if (directRes.ok) {
-                    const text = await directRes.text();
-                    // Upewnij się, że odpowiedź to CSV, a nie strona HTML
-                    if (text.trim().length > 0 && !text.trim().startsWith('<')) {
-                        csv = text;
-                    }
-                }
-            } catch (_corsErr) { /* CORS zablokował — użyj proxy */ }
-
-            // Proxy z poprawnie zakodowanym URL (d1, d2, i= są częścią zakodowanego URL)
-            if (!csv) {
-                const PROXY = 'https://corsproxy.io/?';
-                const proxyRes = await fetch(PROXY + encodeURIComponent(stooqUrl));
-                if (!proxyRes.ok) throw new Error(`HTTP ${proxyRes.status}`);
-                const text = await proxyRes.text();
-                if (text.trim().length > 0 && !text.trim().startsWith('<')) {
-                    csv = text;
-                }
-            }
-
-            if (!csv) throw new Error('Serwer danych zwrócił nieprawidłową odpowiedź. Spróbuj ponownie za chwilę.');
-
+            const res = await fetch(PROXY + stooqUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const csv  = await res.text();
             const rows = parseStooqCSV(csv);
 
             if (rows.length === 0) throw new Error('Brak danych handlowych dla wybranego zakresu dat. Upewnij się, że data początkowa to dzień roboczy sprzed dziś, lub spróbuj późniejszej daty.');

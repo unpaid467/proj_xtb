@@ -1064,15 +1064,19 @@
 
         try {
             const PROXY    = 'https://corsproxy.io/?';
-            const stooqUrl = `https://stooq.com/q/d/l/?s=${encodeURIComponent(stooqSymbol)}&d1=${d1}&d2=${d2}&i=d`;
-            const res      = await fetch(PROXY + encodeURIComponent(stooqUrl));
+            const stooqUrl = `https://stooq.com/q/d/l/?s=${stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
+            const res      = await fetch(PROXY + stooqUrl);
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const csv   = await res.text();
-            const lines = csv.trim().split('\n');
+            const lines = csv.trim().split('\n').filter(Boolean);
 
-            if (lines.length < 2) throw new Error('Brak danych historycznych dla wybranego ETF i zakresu dat');
+            // Stooq returns a short HTML/error page when there's no data or session issue
+            if (lines.length < 2 || !lines[0].toLowerCase().includes('date')) {
+                const preview = lines[0]?.slice(0, 120) ?? '';
+                throw new Error(`Brak danych CSV od Stooq. Odpowiedź: "${preview}"`);
+            }
 
             const dates  = [];
             const prices = [];

@@ -1156,7 +1156,7 @@
 
         const container = document.getElementById('calc-portfolio-btns');
         container.innerHTML = PORTFOLIOS.map(p =>
-            `<button class="portfolio-add-btn" style="--pa-color:${p.color}" onclick="addAllPortfolio('${p.name}')">${p.avatar} ${p.name}</button>`
+            `<button class="portfolio-add-btn" style="--pa-color:${p.color}" onclick="addAllPortfolio('${p.name}')">${p.name}</button>`
         ).join('');
     }
 

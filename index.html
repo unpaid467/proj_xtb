@@ -1078,6 +1078,39 @@
         }).filter(r => r.date && !isNaN(r.close));
     }
 
+    // Parser for /q/a2/d/ endpoint (chart data, no cookies required).
+    // Response format: HTML header ... ~NAME~\nDATE,,OPEN,HIGH,LOW,CLOSE,VOL\n...
+    // Rounds d1 to nearest available trading day (handles weekends/holidays).
+    function parseStooqChartData(text, d1, d2) {
+        const firstTilde = text.indexOf('~');
+        if (firstTilde < 0) return [];
+        const secondTilde = text.indexOf('~', firstTilde + 1);
+        if (secondTilde < 0) return [];
+        const dataBlock = text.slice(secondTilde + 1).trim();
+        const allRows = dataBlock.split('\n')
+            .map(line => {
+                const p = line.split(',');
+                const dateRaw = (p[0] || '').trim();
+                const close = parseFloat(p[5]);             // col 5 = Close
+                if (!dateRaw || dateRaw.length !== 8 || isNaN(close)) return null;
+                const formatted = dateRaw.slice(0,4)+'-'+dateRaw.slice(4,6)+'-'+dateRaw.slice(6,8);
+                return { date: formatted, dateNum: dateRaw, close };
+            })
+            .filter(r => r != null);
+
+        // Find start index: nearest trading day on or before d1.
+        // If d1 is after all data, use the last available day.
+        // If d1 is before all data, use the first available day.
+        let startIdx = allRows.findIndex(r => r.dateNum >= d1);
+        if (startIdx < 0) {
+            startIdx = allRows.length - 1;                                // d1 past end → last row
+        } else if (allRows[startIdx].dateNum !== d1 && startIdx > 0) {
+            startIdx--;                                                   // previous trading day
+        }
+
+        return allRows.slice(startIdx).filter(r => r.dateNum <= d2);
+    }
+
     function showCalcError(msg) {
         document.getElementById('calcLoading').style.display = 'none';
         document.getElementById('calcResult').style.display  = 'none';
@@ -1180,20 +1213,10 @@
         const startDate = new Date(dateStr);
         if (startDate >= new Date()) { showCalcError('Data początkowa musi być z przeszłości.'); return; }
 
-        // Cofnij d1 do piątku jeśli użytkownik wybrał weekend
-        const d1Date = new Date(dateStr + 'T12:00:00');
-        const d1Dow = d1Date.getDay();
-        if (d1Dow === 0) d1Date.setDate(d1Date.getDate() - 2); // niedziela → piątek
-        if (d1Dow === 6) d1Date.setDate(d1Date.getDate() - 1); // sobota   → piątek
-        const d1 = stooqDateStr(d1Date);
-
-        // Cofnij d2 do ostatniego piątku gdy dziś jest weekend — Stooq zwraca
-        // pusty CSV dla dat bez sesji giełdowej (sobota/niedziela).
-        const d2Date = new Date();
-        const d2Dow = d2Date.getDay();
-        if (d2Dow === 0) d2Date.setDate(d2Date.getDate() - 2); // niedziela → piątek
-        if (d2Dow === 6) d2Date.setDate(d2Date.getDate() - 1); // sobota   → piątek
-        const d2 = stooqDateStr(d2Date);
+        // d1/d2 as YYYYMMDD for filtering — no weekend adjustment needed,
+        // the chart endpoint returns only trading days so nearest match is automatic.
+        const d1 = dateStr.replace(/-/g, '');
+        const d2 = stooqDateStr(new Date());
 
         document.getElementById('calcResult').style.display  = 'none';
         document.getElementById('calcError').style.display   = 'none';
@@ -1201,15 +1224,15 @@
         document.getElementById('calcBtn').disabled = true;
 
         try {
-            // Użyj tego samego wzorca proxy co fetchAllPrices —
-            // corsproxy.io oczekuje surowego (niekodowanego) URL po '?'
+            // Use /q/a2/d/ (chart data endpoint) — works WITHOUT session cookies,
+            // unlike /q/d/l/ (CSV download) which returns empty data without cookies.
             const PROXY = 'https://corsproxy.io/?';
-            const stooqUrl = `https://stooq.com/q/d/l/?s=${etf.stooqSymbol}&d1=${d1}&d2=${d2}&i=d`;
+            const stooqUrl = `https://stooq.com/q/a2/d/?s=${etf.stooqSymbol}&i=d`;
 
             const res = await fetch(PROXY + stooqUrl);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const csv  = await res.text();
-            const rows = parseStooqCSV(csv);
+            const text = await res.text();
+            const rows = parseStooqChartData(text, d1, d2);
 
             if (rows.length === 0) throw new Error('Brak danych handlowych dla wybranego zakresu dat. Upewnij się, że data początkowa to dzień roboczy sprzed dziś, lub spróbuj późniejszej daty.');
 

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker Portfeli ETF</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pl.js"></script>
     <style>
         :root {
             --bg: #0f1117;
@@ -683,7 +686,7 @@
         <button class="refresh-btn" id="refreshBtn" onclick="onManualRefresh()">↻ Odśwież teraz</button>
 
         <div style="display:flex;align-items:center;gap:0.5rem;margin-left:1rem;">
-            <input class="calc-date-input" id="customCompareDate" type="date" title="Wybierz datę porównania">
+            <input class="calc-date-input" id="customCompareDate" type="text" placeholder="Wybierz datę" title="Wybierz datę porównania" style="width:140px;">
             <button class="refresh-btn" id="compareBtn" onclick="applyCustomCompare()">Porównaj</button>
             <button class="refresh-btn" id="clearCompareBtn" onclick="clearCustomCompare()">Wyczyść</button>
         </div>
@@ -714,7 +717,7 @@
             </div>
             <div class="calc-control-group">
                 <label class="calc-label" for="calc-start-date">Data początkowa</label>
-                <input class="calc-date-input" type="date" id="calc-start-date">
+                <input class="calc-date-input" type="text" id="calc-start-date" placeholder="Wybierz datę">
                 <div class="calc-presets">
                     <button class="preset-btn" onclick="setPreset(1,'month')">1M</button>
                     <button class="preset-btn" onclick="setPreset(3,'month')">3M</button>
@@ -1645,6 +1648,39 @@
         const d = new Date();
         d.setFullYear(d.getFullYear() - 1);
         document.getElementById('calc-start-date').value = d.toISOString().slice(0, 10);
+    })();
+
+    // Initialize Flatpickr pickers (Polish locale) for better UX
+    (function initDatePickers() {
+        if (typeof flatpickr !== 'function') {
+            console.warn('[ETF Tracker] flatpickr not available — using native inputs');
+            return;
+        }
+        try {
+            if (flatpickr.l10ns && flatpickr.l10ns.pl) flatpickr.localize(flatpickr.l10ns.pl);
+        } catch (e) {}
+
+        // Custom compare date (shows dd.mm.yyyy but keeps value as YYYY-MM-DD)
+        flatpickr('#customCompareDate', {
+            locale: 'pl',
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd.m.Y',
+            allowInput: true,
+            maxDate: 'today',
+            disableMobile: true,
+        });
+
+        // Calculator start date
+        flatpickr('#calc-start-date', {
+            locale: 'pl',
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd.m.Y',
+            allowInput: true,
+            maxDate: 'today',
+            disableMobile: true,
+        });
     })();
 
 </script>

@@ -681,6 +681,12 @@
         </div>
         <span class="countdown-text" id="countdownBar">60:00</span>
         <button class="refresh-btn" id="refreshBtn" onclick="onManualRefresh()">↻ Odśwież teraz</button>
+
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-left:1rem;">
+            <input class="calc-date-input" id="customCompareDate" type="date" title="Wybierz datę porównania">
+            <button class="refresh-btn" id="compareBtn" onclick="applyCustomCompare()">Porównaj</button>
+            <button class="refresh-btn" id="clearCompareBtn" onclick="clearCustomCompare()">Wyczyść</button>
+        </div>
     </div>
 
     <div class="portfolios" id="portfolios"></div>
@@ -969,6 +975,13 @@
     const BASELINE_LOOKBACK_DAYS = 7; // how many days back to search for last trading day
     const baselinePrices = {}; // keyed by yahooSymbol -> numeric price
 
+    // Custom comparison state (user-selected date)
+    let customCompareDateStr = null; // 'YYYY-MM-DD' when user picks a date
+    const customBaselinePrices = {}; // keyed by yahooSymbol -> numeric price for custom date
+
+    // Cache last fetched quote data so we can re-render quickly when user sets/clears custom date
+    const lastQuoteData = {}; // keyed by yahooSymbol -> last stooq response object or null
+
     // ── State ──────────────────────────────────────────────────
     let refreshTimer      = null;
     let countdownInterval = null;
@@ -1077,6 +1090,24 @@
             baselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge ${baseClass}">${baseArrow} ${baseSign}${basePct.toFixed(2)}% vs ${BASELINE_DISPLAY}</span></div>`;
         }
 
+        // Custom user-selected date comparison (if set)
+        let customBaselineHtml = '';
+        if (customCompareDateStr) {
+            const customBase = customBaselinePrices[etf.yahooSymbol];
+            if (customBase !== undefined && customBase !== null && !isNaN(customBase) && customBase > 0) {
+                const cPct = ((price - customBase) / customBase) * 100;
+                const isCPos = cPct > 0;
+                const isCNeg = cPct < 0;
+                const cClass = isCPos ? 'positive' : isCNeg ? 'negative' : 'neutral';
+                const cArrow = isCPos ? '▲' : isCNeg ? '▼' : '→';
+                const cSign = isCPos ? '+' : '';
+                customBaselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge ${cClass}">${cArrow} ${cSign}${cPct.toFixed(2)}% vs ${customCompareDateStr}</span></div>`;
+            } else {
+                // user picked date but we don't have data for this ETF
+                customBaselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge neutral">— vs ${customCompareDateStr}</span></div>`;
+            }
+        }
+
         card.innerHTML = `
             <div class="card-header">
                 <span class="etf-symbol">${etf.symbol}</span>
@@ -1096,6 +1127,7 @@
                 </span>
             </div>
             ${baselineHtml}
+            ${customBaselineHtml}
             <hr class="card-divider">
             <div class="card-stats">
                 <div class="stat-item">
@@ -1140,8 +1172,12 @@
 
         let anySuccess = false;
         ALL_ETFS.forEach((etf, i) => {
-            if (results[i].status === 'fulfilled' && results[i].value) {
-                updateCard(etf, results[i].value);
+            const value = (results[i].status === 'fulfilled' && results[i].value) ? results[i].value : null;
+            // cache the last raw quote result so we can re-render without refetch when user sets custom date
+            lastQuoteData[etf.yahooSymbol] = value;
+
+            if (value) {
+                updateCard(etf, value);
                 anySuccess = true;
             } else {
                 console.warn(`[ETF Tracker] Failed to fetch ${etf.symbol}:`, results[i].reason);
@@ -1200,12 +1236,90 @@
         console.log('[ETF Tracker] Baseline prices loaded.');
     }
 
+    // ── Custom-date baseline fetching (user-selected date) ─────
+    async function fetchCustomBaselinePriceForEtf(etf, dateStr) {
+        if (!etf.yahooSymbol) return null;
+        const PROXY = 'https://corsproxy.io/?';
+        const yahoo = etf.yahooSymbol;
+        const baselineDate = new Date(dateStr + 'T00:00:00Z');
+        const period2 = Math.floor((baselineDate.getTime() + 24 * 60 * 60 * 1000) / 1000);
+        const period1 = Math.floor((baselineDate.getTime() - BASELINE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000) / 1000);
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=1d&period1=${period1}&period2=${period2}`;
+        const res = await fetch(PROXY + url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const result = json?.chart?.result?.[0];
+        if (!result) throw new Error(`${etf.symbol}: brak danych z Yahoo`);
+        const timestamps = result.timestamp ?? [];
+        const closes = result.indicators?.quote?.[0]?.close ?? [];
+        if (timestamps.length === 0) throw new Error(`${etf.symbol}: brak notowań`);
+        for (let i = timestamps.length - 1; i >= 0; i--) {
+            const dStr = new Date(timestamps[i] * 1000).toISOString().slice(0, 10);
+            if (dStr <= dateStr) {
+                const c = closes[i];
+                if (c != null && !isNaN(c)) return c;
+            }
+        }
+        throw new Error(`${etf.symbol}: brak notowań przed ${dateStr}`);
+    }
+
+    async function fetchCustomBaselines(dateStr) {
+        console.log('[ETF Tracker] Fetching custom baseline prices for', dateStr);
+        const tasks = ALL_ETFS.map(async etf => {
+            try {
+                const price = await fetchCustomBaselinePriceForEtf(etf, dateStr);
+                customBaselinePrices[etf.yahooSymbol] = price;
+            } catch (e) {
+                console.warn(`[ETF Tracker] custom baseline fetch failed for ${etf.symbol}: ${e.message}`);
+                customBaselinePrices[etf.yahooSymbol] = null;
+            }
+        });
+        await Promise.all(tasks);
+        console.log('[ETF Tracker] Custom baseline prices loaded.');
+    }
+
     // ── Manual refresh button ─────────────────────────────────
     function onManualRefresh() {
         clearTimeout(refreshTimer);
         clearInterval(countdownInterval);
         fetchAllPrices();
         startCountdown();
+    }
+
+    // ── Custom compare UI handlers ────────────────────────────
+    async function applyCustomCompare() {
+        const input = document.getElementById('customCompareDate');
+        const btn = document.getElementById('compareBtn');
+        const dateStr = input.value;
+        if (!dateStr) return;
+        btn.disabled = true;
+        customCompareDateStr = dateStr;
+        // clear previous values
+        for (const k in customBaselinePrices) delete customBaselinePrices[k];
+        try {
+            await fetchCustomBaselines(dateStr);
+            // re-render using cached lastQuoteData if available
+            const hasAnyLast = Object.keys(lastQuoteData).length > 0;
+            if (hasAnyLast) {
+                ALL_ETFS.forEach(etf => updateCard(etf, lastQuoteData[etf.yahooSymbol] ?? null));
+            } else {
+                // fallback to fetching live prices
+                await fetchAllPrices();
+            }
+        } catch (e) {
+            console.warn('[ETF Tracker] applyCustomCompare error', e);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function clearCustomCompare() {
+        customCompareDateStr = null;
+        for (const k in customBaselinePrices) delete customBaselinePrices[k];
+        const input = document.getElementById('customCompareDate');
+        if (input) input.value = '';
+        // re-render using cached lastQuoteData
+        ALL_ETFS.forEach(etf => updateCard(etf, lastQuoteData[etf.yahooSymbol] ?? null));
     }
 
     // ── Countdown timer & progress bar ────────────────────────

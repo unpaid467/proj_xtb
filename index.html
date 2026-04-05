@@ -963,6 +963,12 @@
     // Used by fetchAllPrices().
     const ALL_ETFS = PORTFOLIOS.flatMap(p => p.etfs);
 
+    // Baseline comparison (01.03.2026)
+    const BASELINE_DATE_STR = '2026-03-01';
+    const BASELINE_DISPLAY  = '01.03.2026';
+    const BASELINE_LOOKBACK_DAYS = 7; // how many days back to search for last trading day
+    const baselinePrices = {}; // keyed by yahooSymbol -> numeric price
+
     // ── State ──────────────────────────────────────────────────
     let refreshTimer      = null;
     let countdownInterval = null;
@@ -1047,7 +1053,6 @@
         }
 
         card.classList.remove('error');
-
         const price     = parseFloat(data.close);
         const open      = parseFloat(data.open);
         const currency  = etf.currency;
@@ -1058,6 +1063,19 @@
         const badgeClass = isPos ? 'positive' : isNeg ? 'negative' : 'neutral';
         const arrow     = isPos ? '▲' : isNeg ? '▼' : '→';
         const sign      = isPos ? '+' : '';
+
+        // Baseline comparison (01.03.2026)
+        const baseline = baselinePrices[etf.yahooSymbol];
+        let baselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge neutral">— vs ${BASELINE_DISPLAY}</span></div>`;
+        if (baseline !== undefined && baseline !== null && !isNaN(baseline) && baseline > 0) {
+            const basePct = ((price - baseline) / baseline) * 100;
+            const isBasePos = basePct > 0;
+            const isBaseNeg = basePct < 0;
+            const baseClass = isBasePos ? 'positive' : isBaseNeg ? 'negative' : 'neutral';
+            const baseArrow = isBasePos ? '▲' : isBaseNeg ? '▼' : '→';
+            const baseSign = isBasePos ? '+' : '';
+            baselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge ${baseClass}">${baseArrow} ${baseSign}${basePct.toFixed(2)}% vs ${BASELINE_DISPLAY}</span></div>`;
+        }
 
         card.innerHTML = `
             <div class="card-header">
@@ -1077,6 +1095,7 @@
                     &nbsp;(${sign}${isNaN(changePct) ? '—' : changePct.toFixed(2)}%) vs otwarcie
                 </span>
             </div>
+            ${baselineHtml}
             <hr class="card-divider">
             <div class="card-stats">
                 <div class="stat-item">
@@ -1139,6 +1158,48 @@
         refreshTimer = setTimeout(fetchAllPrices, REFRESH_INTERVAL_MS);
     }
 
+    // ── Baseline fetch (01.03.2026) ───────────────────────────
+    async function fetchBaselinePriceForEtf(etf) {
+        if (!etf.yahooSymbol) return null;
+        const PROXY = 'https://corsproxy.io/?';
+        const yahoo = etf.yahooSymbol;
+        const baselineDate = new Date(BASELINE_DATE_STR + 'T00:00:00Z');
+        const period2 = Math.floor((baselineDate.getTime() + 24 * 60 * 60 * 1000) / 1000);
+        const period1 = Math.floor((baselineDate.getTime() - BASELINE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000) / 1000);
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=1d&period1=${period1}&period2=${period2}`;
+        const res = await fetch(PROXY + url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const result = json?.chart?.result?.[0];
+        if (!result) throw new Error(`${etf.symbol}: brak danych z Yahoo`);
+        const timestamps = result.timestamp ?? [];
+        const closes = result.indicators?.quote?.[0]?.close ?? [];
+        if (timestamps.length === 0) throw new Error(`${etf.symbol}: brak notowań`);
+        for (let i = timestamps.length - 1; i >= 0; i--) {
+            const dStr = new Date(timestamps[i] * 1000).toISOString().slice(0, 10);
+            if (dStr <= BASELINE_DATE_STR) {
+                const c = closes[i];
+                if (c != null && !isNaN(c)) return c;
+            }
+        }
+        throw new Error(`${etf.symbol}: brak notowań przed ${BASELINE_DATE_STR}`);
+    }
+
+    async function fetchBaselinePrices() {
+        console.log('[ETF Tracker] Fetching baseline prices for', BASELINE_DATE_STR);
+        const tasks = ALL_ETFS.map(async etf => {
+            try {
+                const price = await fetchBaselinePriceForEtf(etf);
+                baselinePrices[etf.yahooSymbol] = price;
+            } catch (e) {
+                console.warn(`[ETF Tracker] baseline fetch failed for ${etf.symbol}: ${e.message}`);
+                baselinePrices[etf.yahooSymbol] = null;
+            }
+        });
+        await Promise.all(tasks);
+        console.log('[ETF Tracker] Baseline prices loaded.');
+    }
+
     // ── Manual refresh button ─────────────────────────────────
     function onManualRefresh() {
         clearTimeout(refreshTimer);
@@ -1168,8 +1229,11 @@
 
     // ── Initialise ────────────────────────────────────────────
     buildGrid();           // render skeleton cards from PORTFOLIOS
-    fetchAllPrices();      // kick off first live-price fetch
-    startCountdown();
+    // Fetch baseline prices for 01.03.2026 first, then load live prices
+    fetchBaselinePrices().catch(e => console.warn('[ETF Tracker] baseline error', e)).finally(() => {
+        fetchAllPrices();      // kick off first live-price fetch
+        startCountdown();
+    });
 
     // ── Tab switching ──────────────────────────────────────────
     function switchTab(name) {

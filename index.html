@@ -717,7 +717,10 @@
                     <button class="preset-btn" onclick="setPreset(5,'year')">5L</button>
                 </div>
             </div>
-            <button class="calc-run-btn" id="calc-run-btn" onclick="loadChartData()">Pokaż wykres</button>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;flex-shrink:0;align-self:flex-end">
+                <button class="calc-run-btn" id="calc-run-btn" onclick="loadChartData()">Pokaż wykres</button>
+                <button class="calc-run-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);" onclick="clearChart()">✕ Wyczyść wykres</button>
+            </div>
         </div>
         <div id="calc-status" class="calc-status"></div>
         <div id="calc-stats-row" class="calc-stats" style="display:none;"></div>
@@ -1242,6 +1245,18 @@
                 <button class="etf-chip-remove" onclick="removeEtf('${e.yahooSymbol}')" title="Usuń">✕</button>
             </span>
         `).join('');
+    }
+
+    function clearChart() {
+        selectedEtfs = [];
+        renderChips();
+        const statsRow  = document.getElementById('calc-stats-row');
+        const chartWrap = document.getElementById('calc-chart-wrap');
+        const statusEl  = document.getElementById('calc-status');
+        statsRow.style.display  = 'none';
+        chartWrap.style.display = 'none';
+        statusEl.textContent = '';
+        if (priceChart) { priceChart.destroy(); priceChart = null; }
     }
 
     // ── Calculator — fetch & render chart (multi-ETF) ─────────

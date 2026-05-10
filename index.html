@@ -174,23 +174,54 @@
 
         .etf-card.error { border-color: var(--red); }
 
+        /* ── Stock card — visually distinct from ETF cards ── */
         .etf-card.stock {
-            border-left: 3px solid var(--green);
-            background: linear-gradient(135deg, var(--surface) 85%, rgba(16,185,129,0.04));
+            border-color: rgba(16,185,129,0.45);
+            border-top: 3px solid var(--green);
+            background: linear-gradient(160deg, rgba(16,185,129,0.07) 0%, var(--surface) 45%);
+        }
+        .etf-card.stock:hover {
+            border-color: rgba(16,185,129,0.7);
+            box-shadow: 0 8px 24px rgba(16,185,129,0.12);
         }
         .etf-card.stock .etf-symbol {
-            color: var(--green);
-            background: rgba(16,185,129,0.1);
+            color: #34d399;
+            background: rgba(16,185,129,0.14);
+            border: 1px solid rgba(16,185,129,0.25);
+        }
+        .etf-card.stock .card-divider {
+            border-color: rgba(16,185,129,0.2);
+        }
+        .stock-type-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
         }
         .stock-badge {
-            font-size: 0.6rem;
-            font-weight: 700;
-            color: var(--green);
-            background: rgba(16,185,129,0.12);
-            border: 1px solid rgba(16,185,129,0.3);
-            padding: 0.15rem 0.45rem;
+            font-size: 0.62rem;
+            font-weight: 800;
+            color: #34d399;
+            background: rgba(16,185,129,0.15);
+            border: 1px solid rgba(16,185,129,0.4);
+            padding: 0.18rem 0.55rem;
             border-radius: 5px;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .stock-icon {
+            font-size: 0.8rem;
+            opacity: 0.75;
+        }
+        .etf-type-badge {
+            font-size: 0.62rem;
+            font-weight: 800;
+            color: #93c5fd;
+            background: rgba(59,130,246,0.15);
+            border: 1px solid rgba(59,130,246,0.35);
+            padding: 0.18rem 0.55rem;
+            border-radius: 5px;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
         }
 
@@ -1091,6 +1122,102 @@
                     description: 'Śledzi S&P 500 z zabezpieczeniem walutowym PLN — 500 największych spółek USA · PLN · Akumulacyjny',
                     infoUrl: 'https://pl.wikipedia.org/wiki/S%26P_500',
                 },
+                {
+                    id: 'K_ASM_NL',
+                    symbol: 'ASM',
+                    stooqSymbol: 'asm.nl',
+                    yahooSymbol: 'ASM.AS',
+                    exchange: 'AEX',
+                    currency: 'EUR',
+                    name: 'ASM International NV',
+                    description: 'Holenderski producent maszyn do osadzania warstw atomowych (ALD) — kluczowy dostawca dla przemysłu półprzewodnikowego · EUR · Akcja',
+                    infoUrl: 'https://en.wikipedia.org/wiki/ASM_International',
+                    type: 'stock',
+                },
+                {
+                    id: 'K_AMZN_US',
+                    symbol: 'AMZN',
+                    stooqSymbol: 'amzn.us',
+                    yahooSymbol: 'AMZN',
+                    exchange: 'NASDAQ',
+                    currency: 'USD',
+                    name: 'Amazon.com Inc',
+                    description: 'Globalny gigant e-commerce i cloud computing (AWS) — jeden z największych pracodawców na świecie · USD · Akcja',
+                    infoUrl: 'https://en.wikipedia.org/wiki/Amazon_(company)',
+                    type: 'stock',
+                },
+                {
+                    id: 'K_CHDN_US',
+                    symbol: 'CHDN',
+                    stooqSymbol: 'chdn.us',
+                    yahooSymbol: 'CHDN',
+                    exchange: 'NASDAQ',
+                    currency: 'USD',
+                    name: 'Churchill Downs Inc',
+                    description: 'Operator torów wyścigowych i kasyn — organizator Kentucky Derby, lider w branży zakładów konnych · USD · Akcja',
+                    infoUrl: 'https://en.wikipedia.org/wiki/Churchill_Downs_Incorporated',
+                    type: 'stock',
+                },
+                {
+                    id: 'K_GNTX_US',
+                    symbol: 'GNTX',
+                    stooqSymbol: 'gntx.us',
+                    yahooSymbol: 'GNTX',
+                    exchange: 'NASDAQ',
+                    currency: 'USD',
+                    name: 'Gentex Corp',
+                    description: 'Producent inteligentnych lusterek wstecznych z funkcją przyciemniania i systemów kamer dla motoryzacji · USD · Akcja',
+                    infoUrl: 'https://en.wikipedia.org/wiki/Gentex_Corporation',
+                    type: 'stock',
+                },
+                {
+                    id: 'K_HEIJM_NL',
+                    symbol: 'HEIJM',
+                    stooqSymbol: 'heijm.nl',
+                    yahooSymbol: 'HEIJM.AS',
+                    exchange: 'AEX',
+                    currency: 'EUR',
+                    name: 'Heijmans NV',
+                    description: 'Holenderska firma budowlana i deweloperska — projekty infrastrukturalne, mieszkaniowe i komercyjne · EUR · Akcja',
+                    infoUrl: 'https://en.wikipedia.org/wiki/Heijmans',
+                    type: 'stock',
+                },
+                {
+                    id: 'K_ISRG_US',
+                    symbol: 'ISRG',
+                    stooqSymbol: 'isrg.us',
+                    yahooSymbol: 'ISRG',
+                    exchange: 'NASDAQ',
+                    currency: 'USD',
+                    name: 'Intuitive Surgical Inc',
+                    description: 'Pionier robotycznej chirurgii minimalnie inwazyjnej — twórca systemu da Vinci · USD · Akcja',
+                    infoUrl: 'https://en.wikipedia.org/wiki/Intuitive_Surgical',
+                    type: 'stock',
+                },
+                {
+                    id: 'K_OMCL_US',
+                    symbol: 'OMCL',
+                    stooqSymbol: 'omcl.us',
+                    yahooSymbol: 'OMCL',
+                    exchange: 'NASDAQ',
+                    currency: 'USD',
+                    name: 'Omnicell Inc',
+                    description: 'Dostawca zautomatyzowanych systemów zarządzania lekami dla szpitali i aptek · USD · Akcja',
+                    infoUrl: 'https://en.wikipedia.org/wiki/Omnicell',
+                    type: 'stock',
+                },
+                {
+                    id: 'K_PKN_PL',
+                    symbol: 'PKN',
+                    stooqSymbol: 'pkn.pl',
+                    yahooSymbol: 'PKN.WA',
+                    exchange: 'GPW',
+                    currency: 'PLN',
+                    name: 'Polski Koncern Naftowy ORLEN SA',
+                    description: 'Największa polska spółka energetyczna — rafinacja, paliwa, petrochemia, energia odnawialna · PLN · Akcja',
+                    infoUrl: 'https://pl.wikipedia.org/wiki/PKN_Orlen',
+                    type: 'stock',
+                },
             ],
         },
         // ── Aby dodać nowe portfolio, dołącz obiekt poniżej. ──
@@ -1144,7 +1271,7 @@
                             <div class="card-header">
                                 <span class="etf-symbol">${etf.symbol}</span>
                                 <div style="display:flex;gap:0.4rem;align-items:center;">
-                                    ${etf.type === 'stock' ? '<span class="stock-badge">AKCJA</span>' : ''}
+                                    ${etf.type === 'stock' ? '<span class="stock-badge">📈 AKCJA</span>' : '<span class="etf-type-badge">🧺 ETF</span>'}
                                     <span class="etf-badge">${etf.exchange}</span>
                                 </div>
                             </div>
@@ -1193,7 +1320,7 @@
                 <div class="card-header">
                     <span class="etf-symbol">${etf.symbol}</span>
                     <div style="display:flex;gap:0.4rem;align-items:center;">
-                        ${etf.type === 'stock' ? '<span class="stock-badge">AKCJA</span>' : ''}
+                        ${etf.type === 'stock' ? '<span class="stock-badge">📈 AKCJA</span>' : '<span class="etf-type-badge">🧺 ETF</span>'}
                         <span class="etf-badge">${etf.exchange}</span>
                     </div>
                 </div>
@@ -1253,7 +1380,7 @@
             <div class="card-header">
                 <span class="etf-symbol">${etf.symbol}</span>
                 <div style="display:flex;gap:0.4rem;align-items:center;">
-                    ${etf.type === 'stock' ? '<span class="stock-badge">AKCJA</span>' : ''}
+                    ${etf.type === 'stock' ? '<span class="stock-badge">📈 AKCJA</span>' : '<span class="etf-type-badge">🧺 ETF</span>'}
                     <span class="etf-badge">${currency}</span>
                 </div>
             </div>

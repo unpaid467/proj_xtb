@@ -174,6 +174,26 @@
 
         .etf-card.error { border-color: var(--red); }
 
+        .etf-card.stock {
+            border-left: 3px solid var(--green);
+            background: linear-gradient(135deg, var(--surface) 85%, rgba(16,185,129,0.04));
+        }
+        .etf-card.stock .etf-symbol {
+            color: var(--green);
+            background: rgba(16,185,129,0.1);
+        }
+        .stock-badge {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--green);
+            background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.3);
+            padding: 0.15rem 0.45rem;
+            border-radius: 5px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
         .card-header {
             display: flex;
             justify-content: space-between;
@@ -933,6 +953,7 @@
                     name: 'BE Semiconductor Industries NV',
                     description: 'Holenderski producent maszyn do montażu półprzewodników — lider w zaawansowanych technikach bondingu · EUR · Akcja',
                     infoUrl: 'https://en.wikipedia.org/wiki/BE_Semiconductor_Industries',
+                    type: 'stock',
                 },
                 {
                     id: 'M_ELT_PL',
@@ -944,6 +965,7 @@
                     name: 'Elektrotim SA',
                     description: 'Polska spółka specjalizująca się w robotach elektrycznych i instalacjach energetycznych · PLN · Akcja',
                     infoUrl: 'https://pl.wikipedia.org/wiki/Elektrotim',
+                    type: 'stock',
                 },
                 {
                     id: 'M_GE_US',
@@ -955,6 +977,7 @@
                     name: 'General Electric Co',
                     description: 'Jeden z największych konglomeratów przemysłowych świata — energia, lotnictwo, opieka zdrowotna · USD · Akcja',
                     infoUrl: 'https://en.wikipedia.org/wiki/General_Electric',
+                    type: 'stock',
                 },
                 {
                     id: 'M_LPP_PL',
@@ -966,6 +989,7 @@
                     name: 'LPP SA',
                     description: 'Wiodąca polska firma odzieżowa — właściciel marek Reserved, Cropp, House, Mohito, Sinsay · PLN · Akcja',
                     infoUrl: 'https://pl.wikipedia.org/wiki/LPP_(firma)',
+                    type: 'stock',
                 },
                 {
                     id: 'M_NVO_US',
@@ -977,6 +1001,7 @@
                     name: 'Novo Nordisk A/S - ADR',
                     description: 'Duński gigant farmaceutyczny — lider w leczeniu cukrzycy i otyłości (Ozempic, Wegovy) · USD · ADR',
                     infoUrl: 'https://en.wikipedia.org/wiki/Novo_Nordisk',
+                    type: 'stock',
                 },
                 {
                     id: 'M_PHIA_NL',
@@ -988,6 +1013,7 @@
                     name: 'Koninklijke Philips NV',
                     description: 'Holenderski globalny lider w technologiach medycznych i elektronice konsumenckiej · EUR · Akcja',
                     infoUrl: 'https://en.wikipedia.org/wiki/Philips',
+                    type: 'stock',
                 },
                 {
                     id: 'M_PRX_NL',
@@ -999,6 +1025,7 @@
                     name: 'Prosus NV',
                     description: 'Holenderska spółka technologiczna i inwestycyjna — ekspozycja na Tencent i rynki wschodzące · EUR · Akcja',
                     infoUrl: 'https://en.wikipedia.org/wiki/Prosus',
+                    type: 'stock',
                 },
                 {
                     id: 'M_TSM_US',
@@ -1010,6 +1037,7 @@
                     name: 'Taiwan Semiconductor Manufacturing Co',
                     description: 'Największy na świecie producent kontraktowy chipów — klienci to Apple, NVIDIA, AMD · USD · ADR',
                     infoUrl: 'https://en.wikipedia.org/wiki/TSMC',
+                    type: 'stock',
                 },
                 {
                     id: 'M_TDG_US',
@@ -1021,6 +1049,7 @@
                     name: 'TransDigm Group Inc',
                     description: 'Producent i dostawca komponentów lotniczych dla sektora obronnego i komercyjnego · USD · Akcja',
                     infoUrl: 'https://en.wikipedia.org/wiki/TransDigm_Group',
+                    type: 'stock',
                 },
             ],
         },
@@ -1071,9 +1100,11 @@
     // Used by fetchAllPrices().
     const ALL_ETFS = PORTFOLIOS.flatMap(p => p.etfs);
 
-    // Baseline comparison (01.03.2026)
-    const BASELINE_DATE_STR = '2026-03-01';
+    // Baseline comparison dates
+    const BASELINE_DATE_STR = '2026-03-01';       // ETFs
     const BASELINE_DISPLAY  = '01.03.2026';
+    const STOCK_BASELINE_DATE_STR = '2026-05-01'; // Stocks
+    const STOCK_BASELINE_DISPLAY  = '01.05.2026';
     const BASELINE_LOOKBACK_DAYS = 7; // how many days back to search for last trading day
     const baselinePrices = {}; // keyed by yahooSymbol -> numeric price
 
@@ -1109,10 +1140,13 @@
                 <div class="person-body" id="body-${portfolio.name}">
                     <div class="etf-grid">
                         ${portfolio.etfs.map(etf => `
-                        <div class="etf-card loading" id="card-${etf.id}">
+                        <div class="etf-card loading${etf.type === 'stock' ? ' stock' : ''}" id="card-${etf.id}">
                             <div class="card-header">
                                 <span class="etf-symbol">${etf.symbol}</span>
-                                <span class="etf-badge">${etf.exchange}</span>
+                                <div style="display:flex;gap:0.4rem;align-items:center;">
+                                    ${etf.type === 'stock' ? '<span class="stock-badge">AKCJA</span>' : ''}
+                                    <span class="etf-badge">${etf.exchange}</span>
+                                </div>
                             </div>
                             <div class="etf-name">${etf.name}</div>
                             <div class="etf-description">${etf.description}</div>
@@ -1151,13 +1185,17 @@
         const card = document.getElementById(`card-${etf.id}`);
         if (!card) return;
         card.classList.remove('loading');
+        if (etf.type === 'stock') card.classList.add('stock');
 
         if (!data || !data.close) {
             card.classList.add('error');
             card.innerHTML = `
                 <div class="card-header">
                     <span class="etf-symbol">${etf.symbol}</span>
-                    <span class="etf-badge">${etf.exchange}</span>
+                    <div style="display:flex;gap:0.4rem;align-items:center;">
+                        ${etf.type === 'stock' ? '<span class="stock-badge">AKCJA</span>' : ''}
+                        <span class="etf-badge">${etf.exchange}</span>
+                    </div>
                 </div>
                 <div class="etf-name">${etf.name}</div>
                 <div class="etf-description">${etf.description}</div>
@@ -1179,9 +1217,10 @@
         const arrow     = isPos ? '▲' : isNeg ? '▼' : '→';
         const sign      = isPos ? '+' : '';
 
-        // Baseline comparison (01.03.2026)
+        // Baseline comparison (ETF: 01.03.2026 · Stock: 01.05.2026)
+        const baselineDisplay = etf.type === 'stock' ? STOCK_BASELINE_DISPLAY : BASELINE_DISPLAY;
         const baseline = baselinePrices[etf.yahooSymbol];
-        let baselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge neutral">— vs ${BASELINE_DISPLAY}</span></div>`;
+        let baselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge neutral">— vs ${baselineDisplay}</span></div>`;
         if (baseline !== undefined && baseline !== null && !isNaN(baseline) && baseline > 0) {
             const basePct = ((price - baseline) / baseline) * 100;
             const isBasePos = basePct > 0;
@@ -1189,7 +1228,7 @@
             const baseClass = isBasePos ? 'positive' : isBaseNeg ? 'negative' : 'neutral';
             const baseArrow = isBasePos ? '▲' : isBaseNeg ? '▼' : '→';
             const baseSign = isBasePos ? '+' : '';
-            baselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge ${baseClass}">${baseArrow} ${baseSign}${basePct.toFixed(2)}% vs ${BASELINE_DISPLAY}</span></div>`;
+            baselineHtml = `<div style="margin-bottom:0.25rem;"><span class="change-badge ${baseClass}">${baseArrow} ${baseSign}${basePct.toFixed(2)}% vs ${baselineDisplay}</span></div>`;
         }
 
         // Custom user-selected date comparison (if set)
@@ -1213,7 +1252,10 @@
         card.innerHTML = `
             <div class="card-header">
                 <span class="etf-symbol">${etf.symbol}</span>
-                <span class="etf-badge">${currency}</span>
+                <div style="display:flex;gap:0.4rem;align-items:center;">
+                    ${etf.type === 'stock' ? '<span class="stock-badge">AKCJA</span>' : ''}
+                    <span class="etf-badge">${currency}</span>
+                </div>
             </div>
             <div class="etf-name">${etf.name}</div>
             <div class="etf-description">${etf.description}</div>
@@ -1296,12 +1338,13 @@
         refreshTimer = setTimeout(fetchAllPrices, REFRESH_INTERVAL_MS);
     }
 
-    // ── Baseline fetch (01.03.2026) ───────────────────────────
+    // ── Baseline fetch (ETF: 01.03.2026 · Stock: 01.05.2026) ──
     async function fetchBaselinePriceForEtf(etf) {
         if (!etf.yahooSymbol) return null;
+        const dateStr = etf.type === 'stock' ? STOCK_BASELINE_DATE_STR : BASELINE_DATE_STR;
         const PROXY = 'https://corsproxy.io/?';
         const yahoo = etf.yahooSymbol;
-        const baselineDate = new Date(BASELINE_DATE_STR + 'T00:00:00Z');
+        const baselineDate = new Date(dateStr + 'T00:00:00Z');
         const period2 = Math.floor((baselineDate.getTime() + 24 * 60 * 60 * 1000) / 1000);
         const period1 = Math.floor((baselineDate.getTime() - BASELINE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000) / 1000);
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=1d&period1=${period1}&period2=${period2}`;
@@ -1315,12 +1358,12 @@
         if (timestamps.length === 0) throw new Error(`${etf.symbol}: brak notowań`);
         for (let i = timestamps.length - 1; i >= 0; i--) {
             const dStr = new Date(timestamps[i] * 1000).toISOString().slice(0, 10);
-            if (dStr <= BASELINE_DATE_STR) {
+            if (dStr <= dateStr) {
                 const c = closes[i];
                 if (c != null && !isNaN(c)) return c;
             }
         }
-        throw new Error(`${etf.symbol}: brak notowań przed ${BASELINE_DATE_STR}`);
+        throw new Error(`${etf.symbol}: brak notowań przed ${dateStr}`);
     }
 
     async function fetchBaselinePrices() {
